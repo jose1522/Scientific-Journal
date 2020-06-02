@@ -1,6 +1,5 @@
 import requests
 import json
-from app import app
 
 class API:
     def __init__(self, url:str, method:str="GET"):

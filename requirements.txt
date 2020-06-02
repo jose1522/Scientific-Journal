@@ -6,3 +6,4 @@ flask-wtf
 flask-session
 redis
 pyyaml
+sqlalchemy

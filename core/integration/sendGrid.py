@@ -1,8 +1,7 @@
-from app import app
 import enum
-import app.util.parsers as customParsers
-import app.util.dictTools as dictTools
-import app.objects.integration.apiConnection as api
+import core.util.parsers as customParsers
+import core.util.dictTools as dictTools
+import core.integration.apiConnection as api
 import json
 
 
@@ -24,7 +23,7 @@ class Email:
             self.content = {}
             self.dynamicData = {}
             self.sender = {}
-            self.data = customParsers.yamlToDict("app/objects/confFiles/SendGrid_Data.yaml")
+            self.data = customParsers.yamlToDict("core/objects/confFiles/SendGrid_Data.yaml")
             self.templateId = emailCategory.value
             self.sg = api.API("https://api.sendgrid.com/v3/mail/send", method="POST")
             self.__addDataFromConfigFile()
@@ -33,7 +32,7 @@ class Email:
 
     def __addDataFromConfigFile(self):
         # Gets keys from all the document
-        presetDynamicData = customParsers.yamlToDict("app/objects/confFiles/Email_Templates.yaml")
+        presetDynamicData = customParsers.yamlToDict("core/objects/confFiles/Email_Templates.yaml")
         presetDynamicElements = list(presetDynamicData.keys())
         if self.category in presetDynamicElements:  # Checks if the enum exists in the conf document
             try:
