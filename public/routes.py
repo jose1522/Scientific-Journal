@@ -29,3 +29,7 @@ def displayUser():
 def logout():
     session.clear()
     return "Goodbye World!"
+
+@public.route("/test")
+def test():
+    return "Hello World"
