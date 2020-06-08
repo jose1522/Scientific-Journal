@@ -7,3 +7,6 @@ flask-session
 redis
 pyyaml
 sqlalchemy
+sqlacodegen
+pyodbc
+Flask-RESTPlus
