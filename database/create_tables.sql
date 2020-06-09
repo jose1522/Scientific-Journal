@@ -1,26 +1,4 @@
-DROP DATABASE if EXISTS SCIENTIFIC_JOURNALS;
-GO
-
-CREATE DATABASE SCIENTIFIC_JOURNALS;
-GO
-
-USE master;
-GO
-
-CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'ZCcGognOT6KQiACu49c9y1TDbHr9Lo7SQjtbqA1zduWxNaUlXg';
-CREATE CERTIFICATE SERVERCERT WITH SUBJECT = 'My DEK Certificate';
-GO
-
 USE SCIENTIFIC_JOURNALS
-GO
-
-CREATE DATABASE ENCRYPTION KEY
-WITH ALGORITHM = AES_256
-ENCRYPTION BY SERVER CERTIFICATE SERVERCERT;
-GO
-
-ALTER DATABASE SCIENTIFIC_JOURNALS
-SET ENCRYPTION ON;
 GO
 
 drop procedure if EXISTS getNextId;
@@ -56,6 +34,18 @@ drop table if EXISTS job;
 drop table if EXISTS degree;
 drop table if EXISTS user_role;
 drop table if EXISTS table_ref;
+
+
+-- Table Reference Table --
+GO
+CREATE Table table_ref(
+    name nvarchar(50) PRIMARY KEY,
+    description nvarchar(50) unique not null,
+    current_value int default 0,
+    isHidden bit default 0,
+    constraint ck_current_value_table_ref check(current_value>=0)
+);
+GO
 
 
 -- USER ROLE TABLE --
@@ -137,18 +127,18 @@ GO
 CREATE INDEX INDXPERSON ON person(active);
 GO
 
-
 -- Error Log Table --
 GO
 CREATE TABLE error_log(
-    id int primary key,
+    id int,
     person int FOREIGN KEY REFERENCES person(id) on delete cascade not null,
     date_time datetime default CURRENT_TIMESTAMP,
-    table_name nvarchar(50) not null,
+    table_name nvarchar(50) FOREIGN KEY REFERENCES table_ref(name) on delete cascade not null,
     description nvarchar(200) not null,
     summary nvarchar(2000) not null,
     constraint ck_id_error_log check (id >= 0),
-    constraint unique_person_error_record unique(person,date_time,table_name)
+    constraint unique_person_error_record unique(person,date_time,table_name),
+    constraint pk_error_log PRIMARY KEY (id, table_name)
 );
 GO
 
@@ -160,11 +150,13 @@ GO
 -- Activity Log Table --
 GO
 CREATE TABLE activity_log(
-    id int primary key,
+    id int,
+    table_name nvarchar(50) FOREIGN KEY REFERENCES table_ref(name) on delete cascade not null,
     person int FOREIGN KEY REFERENCES person(id) on delete cascade not null,
     date_time datetime default CURRENT_TIMESTAMP,
     description nvarchar(200) not null,
-    constraint ck_id_activity_log check (id >= 0)
+    constraint ck_id_activity_log check (id >= 0),
+    constraint pk_activity_log PRIMARY KEY (id, table_name)
 );
 GO
 
@@ -203,7 +195,7 @@ CREATE TABLE branch(
 );
 GO
 
--- Error Log Index --
+-- EBranch Index --
 GO
 CREATE INDEX INDXBRANCH ON branch(active);
 GO
@@ -368,17 +360,6 @@ GO
 CREATE INDEX INDXCARD ON card(customer, active);
 GO
 
--- Table Reference Table --
-GO
-CREATE Table table_ref(
-    name nvarchar(50) PRIMARY KEY,
-    description nvarchar(50) unique not null,
-    current_value int default 0,
-    isHidden bit default 0,
-    constraint ck_current_value_table_ref check(current_value>=0)
-);
-GO
-
 -- Code Table --
 GO
 CREATE Table code(
@@ -506,7 +487,7 @@ SELECT
 FROM 
     error_log e
     left join person p on e.person = p.name
-    left join table_ref t on t.name = 'error_log'
+    left join table_ref t on t.name = e.table_name
     left join consecutive c on t.name = c.table_name
 GO
 
@@ -528,7 +509,7 @@ SELECT
 FROM 
     activity_log a
     left join person p on a.person = p.name
-    left join table_ref t on t.name = 'activity_log'
+    left join table_ref t on t.name = a.table_name
     left join consecutive c on t.name = c.table_name
 GO
 
@@ -666,6 +647,72 @@ FROM
     left join consecutive c on t.name = c.table_name
 GO
 
+-- Function to get next available primary key for any table --
+GO
+CREATE OR ALTER PROCEDURE getNextID (@tableName nvarchar(50))
+AS
+BEGIN
+    DECLARE @current_value int;
+
+    update table_ref with (updlock)
+    set 
+    current_value = coalesce(current_value,0) + 1,
+    @current_value = current_value
+    where [name] = @tableName;
+   
+   	--select value = @current_value, name = @tableName
+   	return @current_value
+END
+GO
+
+-- Function to reverse last available primary key for any table --
+GO
+CREATE OR ALTER PROCEDURE reverseID (@tableName nvarchar(50))
+AS
+BEGIN
+    DECLARE @current_value int;
+    update table_ref with (updlock)
+    set 
+    current_value = current_value - 1
+    where [name] = @tableName;
+END
+GO
+
+-- Consecutive Trigger --
+GO
+CREATE OR ALTER TRIGGER consecutive_trigger ON consecutive
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'consecutive';
+    DECLARE @nextID int;
+    DECLARE @oldID int;
+    DECLARE @type varchar(50);
+    DECLARE @description varchar(100);
+    DECLARE @value int;
+    DECLARE @prefix nvarchar(50);
+    DECLARE @table_name NVARCHAR(50);
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    select * from inserted
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @type, @description, @value, @prefix, @table_name
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            select nextID = @oldID, newID = @nextID, type = @type
+            insert into consecutive VALUES 
+            (@nextID, @type, @description, @value, @prefix, @table_name);
+            FETCH NEXT FROM my_Cursor into @nextID, @type, @description, @value, @prefix, @table_name
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+
+END;
+GO
+
+
+
 -- Populates table_ref --
 GO
 insert into table_ref(name, description, isHidden) values 
@@ -689,41 +736,21 @@ insert into table_ref(name, description, isHidden) values
     ('user_role','Roles',0);
 GO
 
--- Function to get next available primary key for any table --
 GO
-CREATE PROCEDURE getNextID (@tableName nvarchar(10))
-AS
-BEGIN
-    DECLARE @current_value int;
-
-    update table_ref with (updlock)
-    set 
-    @current_value = current_value,
-    current_value = current_value + 1
-    where name = @tableName;
-
-    return @current_value;
-END
+Insert into code (description) values
+    ('Proyectos'),
+    ('Bitácoras Experimentales'),
+    ('Roles'),
+    ('Puestos'),
+    ('Usuarios'),
+    ('Bitácora'),
+    ('Nivel Académico'),
+    ('Ramas Científicas'),
+    ('Errores');
 GO
 
--- Function to reverse last available primary key for any table --
 GO
-CREATE PROCEDURE reverseID (@tableName nvarchar(10))
-AS
-BEGIN
-    DECLARE @current_value int;
-
-    update table_ref with (updlock)
-    set 
-    @current_value = current_value,
-    current_value = current_value - 1
-    where name = @tableName;
-
-    return @current_value;
-END
+Insert into consecutive (id, type, description, value, prefix, table_name) values
+    (0, 'Proyectos','Test Description',100, 'PROY-','Proyectos')
+    ,(1, 'Roles','Test Description',200, 'ROL-','Roles')
 GO
-
-CREATE OR ALTER TRIGGER NewTrigger ON SCIENTIFIC_JOURNALS.dbo.activity_log
-AFTER INSERT
-AS
-;
