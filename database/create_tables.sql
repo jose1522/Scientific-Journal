@@ -86,7 +86,6 @@ GO
 CREATE TABLE job (
     id int primary key,
     name nvarchar(50) not null,
-    description nvarchar(50) not null,
     active bit default 1 not null,
     user_role int FOREIGN KEY references user_role(id) on delete cascade not null,
     constraint ck_id_job check (id >= 0),
@@ -195,7 +194,7 @@ CREATE TABLE branch(
 );
 GO
 
--- EBranch Index --
+-- Branch Index --
 GO
 CREATE INDEX INDXBRANCH ON branch(active);
 GO
@@ -376,7 +375,7 @@ CREATE Table consecutive(
     description nvarchar(100) not null,
     value int default 0,
     prefix nvarchar(50),
-    table_name nvarchar(50) FOREIGN KEY REFERENCES table_ref(description) on delete cascade unique not null,
+    table_name nvarchar(50) FOREIGN KEY REFERENCES table_ref(name) on delete cascade unique not null,
     constraint ck_id_consecutive check (id >= 0),
     constraint ck_value_consecutive check (value >= 0)
 );
@@ -388,14 +387,12 @@ CREATE VIEW view_job(
     id,
     code,
     name,
-    description,
     role
 ) AS 
 SELECT
     j.id,
     concat(coalesce(c.prefix, ''),j.id + COALESCE(c.value,0)),
     j.name,
-    j.description,
     u.name
 FROM 
     job j
@@ -694,13 +691,12 @@ BEGIN
     DECLARE @table_name NVARCHAR(50);
     DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
 
-    select * from inserted
+
     OPEN my_Cursor;
     FETCH NEXT FROM my_Cursor into @nextID, @type, @description, @value, @prefix, @table_name
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            select nextID = @oldID, newID = @nextID, type = @type
             insert into consecutive VALUES 
             (@nextID, @type, @description, @value, @prefix, @table_name);
             FETCH NEXT FROM my_Cursor into @nextID, @type, @description, @value, @prefix, @table_name
@@ -711,46 +707,141 @@ BEGIN
 END;
 GO
 
-
-
--- Populates table_ref --
+-- Branch Trigger --
 GO
-insert into table_ref(name, description, isHidden) values 
-    ('customer_order','Pedidos',1),
-    ('consecutive','Consecutivos',1),
-    ('card','Tarjetas',1),
-    ('customer','Clientes',1),
-    ('methodology','Metodologias',1),
-    ('objective','Objetivos',1),
-    ('experiment_image','Imagenes Experimento',1),
-    ('experiment_equipment','Equipo Experimento',1),
-    ('equipment','Equipo',1),
-    ('experiment','Bitacoras Experimentos',0),
-    ('project','Proyectos',0),
-    ('branch','Ramas Cientificas',0),
-    ('error_log','Errores',0),
-    ('activity_log','Bitacora',0),
-    ('person','Usuarios',0),
-    ('job','Puestos',0),
-    ('degree','Nivel Academico',0),
-    ('user_role','Roles',0);
-GO
+CREATE OR ALTER TRIGGER branch_trigger ON branch
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'branch';
+    DECLARE @nextID int;
+    DECLARE @name nvarchar(50);
+    DECLARE @active bit;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
 
-GO
-Insert into code (description) values
-    ('Proyectos'),
-    ('Bitácoras Experimentales'),
-    ('Roles'),
-    ('Puestos'),
-    ('Usuarios'),
-    ('Bitácora'),
-    ('Nivel Académico'),
-    ('Ramas Científicas'),
-    ('Errores');
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @name, @active
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into branch (id, name) VALUES 
+            (@nextID, @name);
+            FETCH NEXT FROM my_Cursor into @nextID, @name, @active
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+
+END;
 GO
 
+-- User Roles Trigger --
 GO
-Insert into consecutive (id, type, description, value, prefix, table_name) values
-    (0, 'Proyectos','Test Description',100, 'PROY-','Proyectos')
-    ,(1, 'Roles','Test Description',200, 'ROL-','Roles')
+CREATE OR ALTER TRIGGER user_role_trigger ON user_role
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'user_role';
+    DECLARE @nextID int;
+    DECLARE @name nvarchar(50);
+    DECLARE @description nvarchar(100);
+    DECLARE @active bit;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @name, @description, @active
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into user_role (id, name, [description]) VALUES 
+            (@nextID, @name, @description);
+            FETCH NEXT FROM my_Cursor into @nextID, @name, @description, @active
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+
+END;
+GO
+
+-- User Roles Trigger --
+GO
+CREATE OR ALTER TRIGGER user_role_trigger ON user_role
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'user_role';
+    DECLARE @nextID int;
+    DECLARE @name nvarchar(50);
+    DECLARE @description nvarchar(100);
+    DECLARE @active bit;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @name, @description, @active
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into user_role (id, name, [description]) VALUES 
+            (@nextID, @name, @description);
+            FETCH NEXT FROM my_Cursor into @nextID, @name, @description, @active
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+
+END;
+GO
+
+-- Jobs Trigger --
+GO
+CREATE OR ALTER TRIGGER job_trigger ON job
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'job';
+    DECLARE @nextID int;
+    DECLARE @name nvarchar(50);
+    DECLARE @active bit;
+    DECLARE @role int;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @name, @active, @role
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into job (id, name, user_role) VALUES 
+            (@nextID, @name, @role);
+            FETCH NEXT FROM my_Cursor into @nextID, @name, @active, @role
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+
+END;
+GO
+
+-- Degree Trigger --
+GO
+CREATE OR ALTER TRIGGER degree_trigger ON degree
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'degree';
+    DECLARE @nextID int;
+    DECLARE @name nvarchar(50);
+    DECLARE @description nvarchar(50);
+    DECLARE @active bit;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @name, @description, @active
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into degree (id, name, description) VALUES 
+            (@nextID, @name, @description);
+            FETCH NEXT FROM my_Cursor into  @nextID, @name, @description, @active
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+
+END;
 GO
