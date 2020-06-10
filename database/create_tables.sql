@@ -110,8 +110,8 @@ CREATE TABLE person (
     first_surname nvarchar(50) not null,
     second_surname nvarchar(50) not null,
     phone int not null,
-    signature image,
-    photo image,
+    signature varbinary(max),
+    photo varbinary(max),
     degree int FOREIGN KEY references degree(id) on delete cascade not null,
     job int FOREIGN KEY references job(id) on delete cascade not null,
     constraint ck_id_person check (id >= 0),
@@ -292,7 +292,7 @@ GO
 GO
 CREATE Table experiment_image(
     id int PRIMARY KEY,
-    photo image,
+    photo varbinary(max),
     active bit default 1,
     experiment int REFERENCES experiment(id) on delete cascade not null,
     constraint ck_id_experiment_image check (id >= 0)
@@ -308,7 +308,7 @@ GO
 GO
 CREATE Table customer (
     id int PRIMARY KEY,
-    photo image,
+    photo varbinary(max),
     active bit default 1,
     constraint ck_id_customer check (id >= 0)
 );
@@ -644,7 +644,7 @@ FROM
     left join consecutive c on t.name = c.table_name
 GO
 
--- Function to get next available primary key for any table --
+-- Procedure to get next available primary key for any table --
 GO
 CREATE OR ALTER PROCEDURE getNextID (@tableName nvarchar(50))
 AS
@@ -662,7 +662,7 @@ BEGIN
 END
 GO
 
--- Function to reverse last available primary key for any table --
+-- Procedure to reverse last available primary key for any table --
 GO
 CREATE OR ALTER PROCEDURE reverseID (@tableName nvarchar(50))
 AS
@@ -672,6 +672,17 @@ BEGIN
     set 
     current_value = current_value - 1
     where [name] = @tableName;
+END
+GO
+
+-- Procedure to update the number of journals in the project table --
+GO
+CREATE OR ALTER PROCEDURE updateJournalCount (@id int, @count int)
+AS
+BEGIN
+    update project with (updlock)
+    set journals = coalesce(journals,0) + @count
+    where id = @id;
 END
 GO
 
@@ -762,34 +773,6 @@ BEGIN
 END;
 GO
 
--- User Roles Trigger --
-GO
-CREATE OR ALTER TRIGGER user_role_trigger ON user_role
-INSTEAD OF INSERT
-AS
-BEGIN
-    DECLARE @table nvarchar(50) = 'user_role';
-    DECLARE @nextID int;
-    DECLARE @name nvarchar(50);
-    DECLARE @description nvarchar(100);
-    DECLARE @active bit;
-    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
-
-    OPEN my_Cursor;
-    FETCH NEXT FROM my_Cursor into @nextID, @name, @description, @active
-    WHILE @@FETCH_STATUS = 0 
-        BEGIN  
-            EXEC @nextID = getNextID @tableName = @table;
-            insert into user_role (id, name, [description]) VALUES 
-            (@nextID, @name, @description);
-            FETCH NEXT FROM my_Cursor into @nextID, @name, @description, @active
-        END
-    CLOSE my_Cursor  
-    DEALLOCATE my_Cursor  
-
-END;
-GO
-
 -- Jobs Trigger --
 GO
 CREATE OR ALTER TRIGGER job_trigger ON job
@@ -843,5 +826,103 @@ BEGIN
     CLOSE my_Cursor  
     DEALLOCATE my_Cursor  
 
+END;
+GO
+
+-- Person Trigger --
+GO
+CREATE OR ALTER TRIGGER person_trigger ON person
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'person';
+    DECLARE @nextID int;
+    DECLARE @nickname nvarchar(50);
+    DECLARE @password nvarchar(50);
+    DECLARE @active bit;
+    DECLARE @name nvarchar(50);
+    DECLARE @first_surname nvarchar(50);
+    DECLARE @second_surname nvarchar(50);
+    DECLARE @phone int;
+    DECLARE @signature varbinary(max);
+    DECLARE @photo varbinary(max);
+    DECLARE @degree int;
+    DECLARE @job int;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @nickname, @password, @active, @name, @first_surname, @second_surname, @phone, @signature, @phone, @degree, @job
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into person (id, nickname, password, name, first_surname, second_surname, phone, signature, photo, degree, job) VALUES 
+            (@nextID, @nickname, @password, @name, @first_surname, @second_surname, @phone, @signature, @phone, @degree, @job);
+            FETCH NEXT FROM my_Cursor into  @nextID, @nickname, @password, @active, @name, @first_surname, @second_surname, @phone, @signature, @phone, @degree, @job
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+
+END;
+GO
+
+-- Project Trigger --
+GO
+CREATE OR ALTER TRIGGER project_trigger ON project
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'project';
+    DECLARE @nextID int;
+    DECLARE @name varchar(50);
+    DECLARE @price float;
+    DECLARE @journals int;
+    DECLARE @active bit;
+    DECLARE @person int;
+    DECLARE @branch int;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @name, @price, @journals, @active, @person, @branch
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into project (id, name, price, journals, person, branch) VALUES 
+            (@nextID, @name, @price, @journals, @person, @branch);
+            FETCH NEXT FROM my_Cursor into  @nextID, @name, @price, @journals, @active, @person, @branch
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+END;
+GO
+
+-- Experiment Trigger --
+GO
+CREATE OR ALTER TRIGGER experiment_trigger ON experiment
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'experiment';
+    DECLARE @nextID int;
+    DECLARE @name nvarchar(50);
+    DECLARE @date date;
+    DECLARE @description nvarchar(2000);
+    DECLARE @main_objective nvarchar(3000);
+    DECLARE @active bit;
+    DECLARE @project int;
+    DECLARE @experimenter int;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @name, @date, @description, @main_objective, @active, @project, @experimenter
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into experiment (id, name, date, description, main_objective, project, experimenter) VALUES 
+            (@nextID, @name, @date, @description, @main_objective, @project, @experimenter);
+            FETCH NEXT FROM my_Cursor into  @nextID, @name, @date, @description, @main_objective, @active, @project, @experimenter
+            EXEC updateJournalCount @id = @project, @count = 1
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
 END;
 GO
