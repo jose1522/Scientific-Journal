@@ -101,3 +101,60 @@ insert into degree (name, description) VALUES
     ,('Maestria', 'Grado de una institucion de educacion superior')
     ,('Doctorado', 'Grado de una institucion de educacion superior')
 GO
+
+-- Populate Person Table --
+GO
+insert into person (nickname, password, isAdmin, name,  first_surname, second_surname, phone, degree, job) values
+    ('chris','123', 1, 'Christian', 'Hardin', 'Rodriguez', 22222222, 4, 0)
+    ,('dean','123', 1, 'Dean', 'Fernandez', 'Bryant', 22222223, 4, 1)
+    ,('jose','123', 0, 'Jose', 'Moya', 'Porras', 22222224, 4, 2)
+GO
+
+-- Populate Project Table --
+GO
+insert into project (name, price, person, branch) values
+    ('Project A', 10.0, 0, 0)
+    ,('Project B', 15.5, 1, 1)
+    ,('Project C', 21, 2, 2)
+GO
+
+-- Populate Experiment Table --
+GO
+insert into experiment (name, [description], main_objective, project, experimenter, witness) values
+    ('Experiment A', 'Foo', 'Foo', 0, 0, 2)
+    ,('Experiment B', 'Bar', 'Bar', 0, 1, 2)
+GO
+
+-- Populate Experiment Table --
+GO
+insert into equipment (name, brand, model, serial) values
+    ('Macbook Pro 16', 'Apple', 'Macbook Pro', 'A1')
+    ,('Macbook Pro 13', 'Apple', 'Macbook Pro', 'A2')
+    ,('Arduino Uno', 'Arduino', 'Uno', 'A3')
+GO
+
+-- Populate Experiment Equipment Table --
+GO
+insert into experiment_equipment (experiment, equipment) values
+    (0,0)
+    ,(0,2)
+    ,(1,1)
+    ,(1,2)
+GO
+
+-- Populate Methodology Table --
+GO
+insert into methodology (step,description, experiment) values
+    (1, 'Step A', 0)
+    ,(2, 'Step B', 0)
+    ,(3, 'Step C',0)
+GO
+
+-- Populate Objective Table --
+GO
+insert into objective (description, experiment) values
+    ('Goal A', 0)
+    ,('Goal B', 0)
+    ,('Goal C',0)
+GO
+

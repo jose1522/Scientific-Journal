@@ -105,6 +105,7 @@ CREATE TABLE person (
     id int primary key,
     nickname nvarchar(50) not null,
     password nvarchar(50) not null,
+    isAdmin bit default 0 not null,
     active bit default 1 not null,
     name nvarchar(50) not null,
     first_surname nvarchar(50) not null,
@@ -232,6 +233,7 @@ CREATE Table experiment(
     active bit default 1,
     project int REFERENCES project(id) on delete cascade not null,
     experimenter int REFERENCES person(id) on delete no action,
+    witness int REFERENCES person(id) on delete no action,
     constraint ck_id_experiment check (id >= 0)
 );
 GO
@@ -260,7 +262,7 @@ GO
 CREATE Table methodology(
     id int PRIMARY KEY,
     step nvarchar(50) not null,
-    description nvarchar(50) not null,
+    description nvarchar(1000) not null,
     experiment int REFERENCES experiment(id) on delete cascade not null,
     active bit default 1,
     constraint ck_id_methodology check (id >= 0)
@@ -307,7 +309,7 @@ GO
 -- Customer Table --
 GO
 CREATE Table customer (
-    id int PRIMARY KEY,
+    id nvarchar(1000) PRIMARY KEY,
     photo varbinary(max),
     active bit default 1,
     constraint ck_id_customer check (id >= 0)
@@ -325,7 +327,7 @@ CREATE Table customer_order(
     id int PRIMARY KEY,
     date_time datetime default CURRENT_TIMESTAMP,
     project int FOREIGN KEY REFERENCES project(id) on delete cascade not null,
-    customer int FOREIGN KEY REFERENCES customer(id) on delete cascade not null,
+    customer nvarchar(1000)  FOREIGN KEY REFERENCES customer(id) on delete cascade not null,
     status int default 0,
     constraint ck_id_customer_order check (id >= 0),
     constraint ck_customer_order_status check (status between -5 and 1)
@@ -347,7 +349,7 @@ CREATE Table card (
     cvv int not null,
     card_type bit not null,
     active bit default 1 not null,
-    customer int FOREIGN KEY REFERENCES customer(id) on delete cascade not null,
+    customer nvarchar(1000) FOREIGN KEY REFERENCES customer(id) on delete cascade not null,
     constraint ck_id_card check (id >= 0),
     constraint ck_id_month check (card_month between 1 and 12),
     constraint ck_id_year check (card_year >= 2018)
@@ -521,6 +523,7 @@ CREATE VIEW view_experiment(
     main_objective,
     project,
     experimenter,
+    withness,
     equipment,
     methodology,
     objective
@@ -534,12 +537,14 @@ SELECT
     e.main_objective,
     pr.name,
     CONCAT(p.second_surname,' ',p.first_surname,', ',p.name),
-    STRING_AGG(CONCAT('name: ', eq.name,'; model: ', eq.model,', serial:',eq.serial),'\n'),
-    STRING_AGG(CONCAT('step: ',m.step,' description: ', m.description), '\n'),
-    STRING_AGG(o.description, '\n')
+    CONCAT(w.second_surname,' ',w.first_surname,', ',w.name),
+    STRING_AGG(CONCAT('name: ', eq.name,'; model: ', eq.model,', serial:',eq.serial),' \n '),
+    STRING_AGG(CONCAT('step: ',m.step,' description: ', m.description), ' \n '),
+    STRING_AGG(o.description, ' \n ')
 FROM 
     experiment e
-    left join person p on e.experimenter = p.name
+    left join person p on e.experimenter = p.id
+    left join person w on e.witness = w.id
     left join project pr on e.project = pr.id
     left join table_ref t on t.name = 'experiment'
     left join consecutive c on t.name = c.table_name
@@ -557,6 +562,7 @@ GROUP BY
     e.description,
     e.main_objective,
     pr.name,
+    CONCAT(w.second_surname,' ',w.first_surname,', ',w.name),
     CONCAT(p.second_surname,' ',p.first_surname,', ',p.name)
 GO
 
@@ -581,7 +587,7 @@ SELECT
     b.name
 FROM 
     project pr
-    left join person p on pr.person = p.name
+    left join person p on pr.person = p.id
     left join table_ref t on t.name = 'project'
     left join consecutive c on t.name = c.table_name
     left join branch b on b.id = pr.branch
@@ -839,6 +845,7 @@ BEGIN
     DECLARE @nextID int;
     DECLARE @nickname nvarchar(50);
     DECLARE @password nvarchar(50);
+    DECLARE @isAdmin bit;
     DECLARE @active bit;
     DECLARE @name nvarchar(50);
     DECLARE @first_surname nvarchar(50);
@@ -850,14 +857,16 @@ BEGIN
     DECLARE @job int;
     DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
 
+    --Select * from inserted
     OPEN my_Cursor;
-    FETCH NEXT FROM my_Cursor into @nextID, @nickname, @password, @active, @name, @first_surname, @second_surname, @phone, @signature, @phone, @degree, @job
+    FETCH NEXT FROM my_Cursor into @nextID, @nickname, @password, @isAdmin, @active, @name, @first_surname, @second_surname, @phone, @signature, @photo, @degree, @job
+    --select @nextID, @nickname, @password, @isAdmin, @active, @name, @first_surname, @second_surname, @phone, @signature, @photo, @degree, @job
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            insert into person (id, nickname, password, name, first_surname, second_surname, phone, signature, photo, degree, job) VALUES 
-            (@nextID, @nickname, @password, @name, @first_surname, @second_surname, @phone, @signature, @phone, @degree, @job);
-            FETCH NEXT FROM my_Cursor into  @nextID, @nickname, @password, @active, @name, @first_surname, @second_surname, @phone, @signature, @phone, @degree, @job
+            insert into person (id, nickname, password, isAdmin, name, first_surname, second_surname, phone, signature, photo, degree, job) VALUES 
+            (@nextID, @nickname, @password, @isAdmin, @name, @first_surname, @second_surname, @phone, @signature, @photo, @degree, @job);
+            FETCH NEXT FROM my_Cursor into  @nextID, @nickname, @password, @isAdmin, @active, @name, @first_surname, @second_surname, @phone, @signature, @photo, @degree, @job
         END
     CLOSE my_Cursor  
     DEALLOCATE my_Cursor  
@@ -895,7 +904,7 @@ BEGIN
 END;
 GO
 
--- Experiment Trigger --
+-- Experiment Insert Trigger --
 GO
 CREATE OR ALTER TRIGGER experiment_trigger ON experiment
 INSTEAD OF INSERT
@@ -910,17 +919,216 @@ BEGIN
     DECLARE @active bit;
     DECLARE @project int;
     DECLARE @experimenter int;
+    DECLARE @witness int;
     DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
 
     OPEN my_Cursor;
-    FETCH NEXT FROM my_Cursor into @nextID, @name, @date, @description, @main_objective, @active, @project, @experimenter
+    FETCH NEXT FROM my_Cursor into @nextID, @name, @date, @description, @main_objective, @active, @project, @experimenter, @witness
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            insert into experiment (id, name, date, description, main_objective, project, experimenter) VALUES 
-            (@nextID, @name, @date, @description, @main_objective, @project, @experimenter);
-            FETCH NEXT FROM my_Cursor into  @nextID, @name, @date, @description, @main_objective, @active, @project, @experimenter
+            insert into experiment (id, name, date, description, main_objective, project, experimenter, witness) VALUES 
+            (@nextID, @name, @date, @description, @main_objective, @project, @experimenter, @witness);
+            FETCH NEXT FROM my_Cursor into  @nextID, @name, @date, @description, @main_objective, @active, @project, @experimenter, @witness
             EXEC updateJournalCount @id = @project, @count = 1
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+END;
+GO
+
+-- Project Trigger --
+GO
+CREATE OR ALTER TRIGGER project_trigger ON project
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'project';
+    DECLARE @nextID int;
+    DECLARE @name varchar(50);
+    DECLARE @price float;
+    DECLARE @journals int;
+    DECLARE @active bit;
+    DECLARE @person int;
+    DECLARE @branch int;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @name, @price, @journals, @active, @person, @branch
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into project (id, name, price, journals, person, branch) VALUES 
+            (@nextID, @name, @price, @journals, @person, @branch);
+            FETCH NEXT FROM my_Cursor into  @nextID, @name, @price, @journals, @active, @person, @branch
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+END;
+GO
+
+-- Equipment Trigger --
+GO
+CREATE OR ALTER TRIGGER equipmment_trigger ON equipment
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'equipment';
+    DECLARE @nextID int;
+    DECLARE @name varchar(50);
+    DECLARE @brand varchar(50);
+    DECLARE @model varchar(50);
+    DECLARE @serial varchar(50);
+    DECLARE @active bit;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @name, @brand, @model, @serial, @active
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into equipment (id, name, brand, model, serial) VALUES 
+            (@nextID, @name, @brand, @model, @serial);
+            FETCH NEXT FROM my_Cursor into @nextID, @name, @brand, @model, @serial, @active
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+END;
+GO
+
+-- Methodology Trigger --
+GO
+CREATE OR ALTER TRIGGER methodology_trigger ON methodology
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'methodology';
+    DECLARE @nextID int;
+    DECLARE @step nvarchar(50);
+    DECLARE @description nvarchar(1000);
+    DECLARE @experiment int;
+    DECLARE @active bit;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @step, @description, @experiment, @active
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into methodology (id, step, description, experiment) VALUES 
+            (@nextID, @step, @description, @experiment);
+            FETCH NEXT FROM my_Cursor into @nextID, @step, @description, @experiment, @active
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+END;
+GO
+
+-- Objective Trigger --
+GO
+CREATE OR ALTER TRIGGER objective_trigger ON objective
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'objective';
+    DECLARE @nextID int;
+    DECLARE @description nvarchar(1000);
+    DECLARE @experiment int;
+    DECLARE @active bit;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @description, @experiment, @active
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into objective (id, description, experiment) VALUES 
+            (@nextID, @description, @experiment);
+            FETCH NEXT FROM my_Cursor into @nextID, @description, @experiment, @active
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+END;
+GO
+
+-- Experiment Image Trigger --
+GO
+CREATE OR ALTER TRIGGER experiment_image_trigger ON experiment_image
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'experiment_image';
+    DECLARE @nextID int;
+    DECLARE @image varbinary(max);
+    DECLARE @experiment int;
+    DECLARE @active bit;
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @image, @active, @experiment
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into experiment_image (id, photo, experiment) VALUES 
+            (@nextID, @image, @experiment);
+            FETCH NEXT FROM my_Cursor into @nextID, @image, @active, @experiment
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+END;
+GO
+
+-- Customer Trigger --
+-- GO
+-- CREATE OR ALTER TRIGGER customer_trigger ON customer
+-- INSTEAD OF INSERT
+-- AS
+-- BEGIN
+--     DECLARE @table nvarchar(50) = 'customer';
+--     DECLARE @nextID int;
+--     DECLARE @photo varbinary(max);
+--     DECLARE @active bit;
+--     DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+--     OPEN my_Cursor;
+--     FETCH NEXT FROM my_Cursor into @nextID, @photo, @active
+--     WHILE @@FETCH_STATUS = 0 
+--         BEGIN  
+--             EXEC @nextID = getNextID @tableName = @table;
+--             insert into customer (id, photo, active) VALUES 
+--             (@nextID, @photo, @active);
+--             FETCH NEXT FROM my_Cursor into @nextID, @photo, @active
+--         END
+--     CLOSE my_Cursor  
+--     DEALLOCATE my_Cursor  
+-- END;
+-- GO
+
+-- Card Trigger --
+GO
+CREATE OR ALTER TRIGGER card_trigger ON card
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'card';
+    DECLARE @nextID int;
+    DECLARE @card_number bigint;
+    DECLARE @card_month int;
+    DECLARE @card_year int;
+    DECLARE @cvv int;
+    DECLARE @card_type bit;
+    DECLARE @active bit;
+    DECLARE @customer nvarchar(1000);
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @card_number, @card_month, @card_year, @cvv, @card_type, @active, @customer
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into card (id, card_number, card_month, card_year, cvv, card_type, customer) VALUES 
+            (@nextID, @card_number, @card_month, @card_year, @cvv, @card_type, @customer);
+            FETCH NEXT FROM my_Cursor into @nextID, @card_number, @card_month, @card_year, @cvv, @card_type, @active, @customer
         END
     CLOSE my_Cursor  
     DEALLOCATE my_Cursor  
