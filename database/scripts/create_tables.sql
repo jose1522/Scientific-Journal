@@ -43,6 +43,7 @@ CREATE Table table_ref(
     description nvarchar(50) unique not null,
     current_value int default 0,
     isHidden bit default 0,
+    available bit default 1,
     constraint ck_current_value_table_ref check(current_value>=0)
 );
 GO
@@ -87,7 +88,7 @@ CREATE TABLE job (
     id int primary key,
     name nvarchar(50) not null,
     active bit default 1 not null,
-    user_role int FOREIGN KEY references user_role(id) on delete cascade not null,
+    user_role_id int FOREIGN KEY references user_role(id) on delete cascade not null,
     constraint ck_id_job check (id >= 0),
     constraint unique_name_job unique(name)
 );
@@ -113,8 +114,8 @@ CREATE TABLE person (
     phone int not null,
     signature varbinary(max),
     photo varbinary(max),
-    degree int FOREIGN KEY references degree(id) on delete cascade not null,
-    job int FOREIGN KEY references job(id) on delete cascade not null,
+    degree_id int FOREIGN KEY references degree(id) on delete cascade not null,
+    job_id int FOREIGN KEY references job(id) on delete cascade not null,
     constraint ck_id_person check (id >= 0),
     constraint unique_nickname unique(nickname),
     constraint unique_fullname_person unique(name, first_surname, second_surname),
@@ -131,38 +132,38 @@ GO
 GO
 CREATE TABLE error_log(
     id int,
-    person int FOREIGN KEY REFERENCES person(id) on delete cascade not null,
+    person_id int FOREIGN KEY REFERENCES person(id) on delete cascade not null,
     date_time datetime default CURRENT_TIMESTAMP,
-    table_name nvarchar(50) FOREIGN KEY REFERENCES table_ref(name) on delete cascade not null,
+    table_name_id nvarchar(50) FOREIGN KEY REFERENCES table_ref(name) on delete cascade not null,
     description nvarchar(200) not null,
     summary nvarchar(2000) not null,
     constraint ck_id_error_log check (id >= 0),
-    constraint unique_person_error_record unique(person,date_time,table_name),
-    constraint pk_error_log PRIMARY KEY (id, table_name)
+    constraint unique_person_error_record unique(person_id,date_time,table_name_id),
+    constraint pk_error_log PRIMARY KEY (id, table_name_id)
 );
 GO
 
 -- Error Log Index --
 GO
-CREATE INDEX INDXERRLOG ON error_log(person);
+CREATE INDEX INDXERRLOG ON error_log(person_id);
 GO
 
 -- Activity Log Table --
 GO
 CREATE TABLE activity_log(
     id int,
-    table_name nvarchar(50) FOREIGN KEY REFERENCES table_ref(name) on delete cascade not null,
-    person int FOREIGN KEY REFERENCES person(id) on delete cascade not null,
+    table_name_id nvarchar(50) FOREIGN KEY REFERENCES table_ref(name) on delete cascade not null,
+    person_id int FOREIGN KEY REFERENCES person(id) on delete cascade not null,
     date_time datetime default CURRENT_TIMESTAMP,
     description nvarchar(200) not null,
     constraint ck_id_activity_log check (id >= 0),
-    constraint pk_activity_log PRIMARY KEY (id, table_name)
+    constraint pk_activity_log PRIMARY KEY (id, table_name_id)
 );
 GO
 
 -- Activity Log Index --
 GO
-CREATE INDEX INDXACTLOG ON activity_log(person);
+CREATE INDEX INDXACTLOG ON activity_log(person_id);
 GO
 
 -- Equipment Table --
@@ -208,8 +209,8 @@ CREATE TABLE project(
     price float default 0,
     journals int default 0,
     active bit default 1,
-    person int REFERENCES person(id) on delete cascade not null,
-    branch int REFERENCES branch(id) on delete cascade not null,
+    person_id int REFERENCES person(id) on delete cascade not null,
+    branch_id int REFERENCES branch(id) on delete cascade not null,
     constraint ck_id_project check (id >= 0),
     constraint ck_price_project check (price >= 0),
     constraint ck_journals_project check (journals >= 0),
@@ -219,7 +220,7 @@ GO
 
 -- Project Table Index --
 GO
-CREATE INDEX INDXPROJECT ON project(person, active);
+CREATE INDEX INDXPROJECT ON project(person_id, active);
 GO
 
 -- Experiment Table --
@@ -231,23 +232,23 @@ CREATE Table experiment(
     description nvarchar(2000) not null,
     main_objective nvarchar(3000) not null,
     active bit default 1,
-    project int REFERENCES project(id) on delete cascade not null,
-    experimenter int REFERENCES person(id) on delete no action,
-    witness int REFERENCES person(id) on delete no action,
+    project_id int REFERENCES project(id) on delete cascade not null,
+    experimenter_id int REFERENCES person(id) on delete no action,
+    witness_id int REFERENCES person(id) on delete no action,
     constraint ck_id_experiment check (id >= 0)
 );
 GO
 
 -- Experiment Table Index --
 GO
-CREATE INDEX INDXEXPERIMENT ON experiment(project, active);
+CREATE INDEX INDXEXPERIMENT ON experiment(project_id, active);
 GO
 
 -- Experiment Equipment Table --
 GO
 CREATE TABLE experiment_equipment(
-    experiment int FOREIGN KEY REFERENCES experiment(id) on delete cascade not null,
-    equipment int FOREIGN KEY REFERENCES equipment(id) on delete cascade not null,
+    experiment_id int FOREIGN KEY REFERENCES experiment(id) on delete cascade not null,
+    equipment_id int FOREIGN KEY REFERENCES equipment(id) on delete cascade not null,
     active bit default 1
 );
 GO
@@ -263,7 +264,7 @@ CREATE Table methodology(
     id int PRIMARY KEY,
     step nvarchar(50) not null,
     description nvarchar(1000) not null,
-    experiment int REFERENCES experiment(id) on delete cascade not null,
+    experiment_id int REFERENCES experiment(id) on delete cascade not null,
     active bit default 1,
     constraint ck_id_methodology check (id >= 0)
 );
@@ -271,7 +272,7 @@ GO
 
 -- Methodology Table Index --
 GO
-CREATE INDEX INDXMETHODOLOGY ON methodology(experiment, active);
+CREATE INDEX INDXMETHODOLOGY ON methodology(experiment_id, active);
 GO
 
 -- Objective Table --
@@ -279,7 +280,7 @@ GO
 CREATE Table objective(
     id int PRIMARY KEY,
     description nvarchar(50) not null,
-    experiment int REFERENCES experiment(id) on delete cascade not null,
+    experiment_id int REFERENCES experiment(id) on delete cascade not null,
     active bit default 1,
     constraint ck_id_objective check (id >= 0)
 );
@@ -287,7 +288,7 @@ GO
 
 -- Objective Table Index --
 GO
-CREATE INDEX INDXOBJECTIVE ON objective(experiment, active);
+CREATE INDEX INDXOBJECTIVE ON objective(experiment_id, active);
 GO
 
 -- Experiment Image Table --
@@ -296,76 +297,77 @@ CREATE Table experiment_image(
     id int PRIMARY KEY,
     photo varbinary(max),
     active bit default 1,
-    experiment int REFERENCES experiment(id) on delete cascade not null,
+    experiment_id int REFERENCES experiment(id) on delete cascade not null,
     constraint ck_id_experiment_image check (id >= 0)
 );
 GO
 
 -- Experiment Image Index --
 GO
-CREATE INDEX INDXEXPIMG ON experiment_image(experiment, active);
+CREATE INDEX INDXEXPIMG ON experiment_image(experiment_id, active);
 GO
 
--- Customer Table --
-GO
-CREATE Table customer (
-    id nvarchar(1000) PRIMARY KEY,
-    photo varbinary(max),
-    active bit default 1,
-    constraint ck_id_customer check (id >= 0)
-);
-GO
+-- -- Customer Table --
+-- GO
+-- CREATE Table customer (
+--     id nvarchar(1000) PRIMARY KEY,
+--     photo varbinary(max),
+--     active bit default 1,
+--     constraint ck_id_customer check (id >= 0)
+-- );
+-- GO
 
--- Customer Index --
-GO
-CREATE INDEX INDCUSTOMER ON customer(active);
-GO
+-- -- Customer Index --
+-- GO
+-- CREATE INDEX INDCUSTOMER ON customer(active);
+-- GO
 
--- Costumer Order Table --
-GO
-CREATE Table customer_order(
-    id int PRIMARY KEY,
-    date_time datetime default CURRENT_TIMESTAMP,
-    project int FOREIGN KEY REFERENCES project(id) on delete cascade not null,
-    customer nvarchar(1000)  FOREIGN KEY REFERENCES customer(id) on delete cascade not null,
-    status int default 0,
-    constraint ck_id_customer_order check (id >= 0),
-    constraint ck_customer_order_status check (status between -5 and 1)
-);
-GO
+-- -- Costumer Order Table --
+-- GO
+-- CREATE Table customer_order(
+--     id int PRIMARY KEY,
+--     date_time datetime default CURRENT_TIMESTAMP,
+--     project_id int FOREIGN KEY REFERENCES project(id) on delete cascade not null,
+--     customer_id nvarchar(1000)  FOREIGN KEY REFERENCES customer(id) on delete cascade not null,
+--     status int default 0,
+--     constraint ck_id_customer_order check (id >= 0),
+--     constraint ck_customer_order_status check (status between -5 and 1)
+-- );
+-- GO
 
--- Customer Table Index --
-GO
-CREATE INDEX INDXCUSTOMERORDER ON customer_order(customer);
-GO
+-- -- Customer Table Index --
+-- GO
+-- CREATE INDEX INDXCUSTOMERORDER ON customer_order(customer);
+-- GO
 
 -- Card Table --
-GO
-CREATE Table card (
-    id int PRIMARY KEY,
-    card_number bigint not null,
-    card_month int not null,
-    card_year int not null,
-    cvv int not null,
-    card_type bit not null,
-    active bit default 1 not null,
-    customer nvarchar(1000) FOREIGN KEY REFERENCES customer(id) on delete cascade not null,
-    constraint ck_id_card check (id >= 0),
-    constraint ck_id_month check (card_month between 1 and 12),
-    constraint ck_id_year check (card_year >= 2018)
-);
-GO
+-- GO
+-- CREATE Table card (
+--     id int PRIMARY KEY,
+--     card_number bigint not null,
+--     card_month int not null,
+--     card_year int not null,
+--     cvv int not null,
+--     card_type bit not null,
+--     active bit default 1 not null,
+--     customer_id nvarchar(1000) FOREIGN KEY REFERENCES customer(id) on delete cascade not null,
+--     constraint ck_id_card check (id >= 0),
+--     constraint ck_id_month check (card_month between 1 and 12),
+--     constraint ck_id_year check (card_year >= 2018)
+-- );
+-- GO
 
--- Card Table Index --
-GO
-CREATE INDEX INDXCARD ON card(customer, active);
-GO
+-- -- Card Table Index --
+-- GO
+-- CREATE INDEX INDXCARD ON card(customer, active);
+-- GO
 
 -- Code Table --
 GO
 CREATE Table code(
     id int IDENTITY(1,1) PRIMARY KEY,
-    description nvarchar(50) unique not null
+    description nvarchar(50) unique not null,
+    available int default(1)
 );
 GO
 
@@ -373,11 +375,11 @@ GO
 GO
 CREATE Table consecutive(
     id int PRIMARY KEY,
-    type nvarchar(50) FOREIGN KEY REFERENCES code(description) on delete cascade unique not null,
+    type_id int FOREIGN KEY REFERENCES code(id) on delete cascade unique not null,
     description nvarchar(100) not null,
     value int default 0,
     prefix nvarchar(50),
-    table_name nvarchar(50) FOREIGN KEY REFERENCES table_ref(name) on delete cascade unique not null,
+    table_name_id nvarchar(50) FOREIGN KEY REFERENCES table_ref(name) on delete cascade unique not null,
     constraint ck_id_consecutive check (id >= 0),
     constraint ck_value_consecutive check (value >= 0)
 );
@@ -398,9 +400,9 @@ SELECT
     u.name
 FROM 
     job j
-    left join user_role u on j.user_role = u.id
+    left join user_role u on j.user_role_id = u.id
     left join table_ref t on t.name = 'job'
-    left join consecutive c on t.name = c.table_name
+    left join consecutive c on t.name = c.table_name_id
 WHERE 
     j.active = 1
 GO
@@ -419,7 +421,7 @@ SELECT
 FROM 
     branch b
     left join table_ref t on t.name = 'branch'
-    left join consecutive c on t.name = c.table_name
+    left join consecutive c on t.name = c.table_name_id
 WHERE 
     b.active = 1
 GO
@@ -440,7 +442,7 @@ SELECT
 FROM 
     user_role u
     left join table_ref t on t.name = 'user_role'
-    left join consecutive c on t.name = c.table_name
+    left join consecutive c on t.name = c.table_name_id
 WHERE 
     u.active = 1
 GO
@@ -461,7 +463,7 @@ SELECT
 FROM 
     degree d
     left join table_ref t on t.name = 'degree'
-    left join consecutive c on t.name = c.table_name
+    left join consecutive c on t.name = c.table_name_id
 WHERE 
     d.active = 1
 GO
@@ -485,9 +487,9 @@ SELECT
     e.summary
 FROM 
     error_log e
-    left join person p on e.person = p.name
-    left join table_ref t on t.name = e.table_name
-    left join consecutive c on t.name = c.table_name
+    left join person p on e.person_id = p.name
+    left join table_ref t on t.name = e.table_name_id
+    left join consecutive c on t.name = c.table_name_id
 GO
 
 -- Activity Log View --
@@ -507,9 +509,9 @@ SELECT
     a.[description]
 FROM 
     activity_log a
-    left join person p on a.person = p.name
-    left join table_ref t on t.name = a.table_name
-    left join consecutive c on t.name = c.table_name
+    left join person p on a.person_id = p.name
+    left join table_ref t on t.name = a.table_name_id
+    left join consecutive c on t.name = c.table_name_id
 GO
 
 -- Experiment View --
@@ -543,15 +545,15 @@ SELECT
     STRING_AGG(o.description, ' \n ')
 FROM 
     experiment e
-    left join person p on e.experimenter = p.id
-    left join person w on e.witness = w.id
-    left join project pr on e.project = pr.id
+    left join person p on e.experimenter_id = p.id
+    left join person w on e.witness_id = w.id
+    left join project pr on e.project_id = pr.id
     left join table_ref t on t.name = 'experiment'
-    left join consecutive c on t.name = c.table_name
-    left join experiment_equipment eq1 on e.id = eq1.experiment
-    left join equipment eq on eq.id = eq1.equipment and eq.active = 1
-    left join methodology m on e.id = m.experiment and m.active = 1
-    left join objective o on o.experiment = e.id and o.active = 1
+    left join consecutive c on t.name = c.table_name_id
+    left join experiment_equipment eq1 on e.id = eq1.experiment_id
+    left join equipment eq on eq.id = eq1.equipment_id and eq.active = 1
+    left join methodology m on e.id = m.experiment_id and m.active = 1
+    left join objective o on o.experiment_id = e.id and o.active = 1
 WHERE
     e.active = 1
 GROUP BY
@@ -587,33 +589,33 @@ SELECT
     b.name
 FROM 
     project pr
-    left join person p on pr.person = p.id
+    left join person p on pr.person_id = p.id
     left join table_ref t on t.name = 'project'
-    left join consecutive c on t.name = c.table_name
-    left join branch b on b.id = pr.branch
+    left join consecutive c on t.name = c.table_name_id
+    left join branch b on b.id = pr.branch_id
 WHERE
     pr.active = 1
 GO
 
--- Customer Order View --
-GO
-CREATE VIEW view_customer_order(
-    id,
-    project,
-    customer,
-    status
-) AS 
-SELECT
-    pr.id,
-    pr.name,
-    co.customer,
-    co.status
-FROM 
-    customer_order co
-    left join project pr on co.project = pr.id
-    left join table_ref t on t.name = 'customer_order'
-    left join consecutive c on t.name = c.table_name
-GO
+-- -- Customer Order View --
+-- GO
+-- CREATE VIEW view_customer_order(
+--     id,
+--     project,
+--     customer,
+--     status
+-- ) AS 
+-- SELECT
+--     pr.id,
+--     pr.name,
+--     co.customer_id,
+--     co.status
+-- FROM 
+--     customer_order co
+--     left join project pr on co.project_id = pr.id
+--     left join table_ref t on t.name = 'customer_order'
+--     left join consecutive c on t.name = c.table_name_id
+-- GO
 
 -- Person View --
 GO
@@ -644,10 +646,10 @@ SELECT
     j.name
 FROM 
     person p
-    left join degree d on d.id = p.degree
-    left join job j on j.id = p.job
+    left join degree d on d.id = p.degree_id
+    left join job j on j.id = p.job_id
     left join table_ref t on t.name = 'person'
-    left join consecutive c on t.name = c.table_name
+    left join consecutive c on t.name = c.table_name_id
 GO
 
 -- Procedure to get next available primary key for any table --
@@ -701,7 +703,7 @@ BEGIN
     DECLARE @table nvarchar(50) = 'consecutive';
     DECLARE @nextID int;
     DECLARE @oldID int;
-    DECLARE @type varchar(50);
+    DECLARE @type int;
     DECLARE @description varchar(100);
     DECLARE @value int;
     DECLARE @prefix nvarchar(50);
@@ -716,6 +718,8 @@ BEGIN
             EXEC @nextID = getNextID @tableName = @table;
             insert into consecutive VALUES 
             (@nextID, @type, @description, @value, @prefix, @table_name);
+            update table_ref set available=0 where name = @table_name;
+            update code set available=0 where id = @type;
             FETCH NEXT FROM my_Cursor into @nextID, @type, @description, @value, @prefix, @table_name
         END
     CLOSE my_Cursor  
@@ -724,6 +728,35 @@ BEGIN
 END;
 GO
 
+GO
+CREATE OR ALTER TRIGGER consecutive_trigger_delete ON consecutive
+after DELETE
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'consecutive';
+    DECLARE @nextID int;
+    DECLARE @oldID int;
+    DECLARE @type int;
+    DECLARE @description varchar(100);
+    DECLARE @value int;
+    DECLARE @prefix nvarchar(50);
+    DECLARE @table_name NVARCHAR(50);
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM DELETED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @type, @description, @value, @prefix, @table_name
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN
+            EXEC reverseID @tableName = @table;
+            update table_ref set available=1 where name = @table_name;
+            update code set available=1 where id = @type;
+            FETCH NEXT FROM my_Cursor into @nextID, @type, @description, @value, @prefix, @table_name
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+
+END;
+GO
 -- Branch Trigger --
 GO
 CREATE OR ALTER TRIGGER branch_trigger ON branch
@@ -797,7 +830,7 @@ BEGIN
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            insert into job (id, name, user_role) VALUES 
+            insert into job (id, name, user_role_id) VALUES 
             (@nextID, @name, @role);
             FETCH NEXT FROM my_Cursor into @nextID, @name, @active, @role
         END
@@ -864,7 +897,7 @@ BEGIN
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            insert into person (id, nickname, password, isAdmin, name, first_surname, second_surname, phone, signature, photo, degree, job) VALUES 
+            insert into person (id, nickname, password, isAdmin, name, first_surname, second_surname, phone, signature, photo, degree_id, job_id) VALUES 
             (@nextID, @nickname, @password, @isAdmin, @name, @first_surname, @second_surname, @phone, @signature, @photo, @degree, @job);
             FETCH NEXT FROM my_Cursor into  @nextID, @nickname, @password, @isAdmin, @active, @name, @first_surname, @second_surname, @phone, @signature, @photo, @degree, @job
         END
@@ -895,7 +928,7 @@ BEGIN
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            insert into project (id, name, price, journals, person, branch) VALUES 
+            insert into project (id, name, price, journals, person_id, branch_id) VALUES 
             (@nextID, @name, @price, @journals, @person, @branch);
             FETCH NEXT FROM my_Cursor into  @nextID, @name, @price, @journals, @active, @person, @branch
         END
@@ -927,7 +960,7 @@ BEGIN
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            insert into experiment (id, name, date, description, main_objective, project, experimenter, witness) VALUES 
+            insert into experiment (id, name, date, description, main_objective, project_id, experimenter_id, witness_id) VALUES 
             (@nextID, @name, @date, @description, @main_objective, @project, @experimenter, @witness);
             FETCH NEXT FROM my_Cursor into  @nextID, @name, @date, @description, @main_objective, @active, @project, @experimenter, @witness
             EXEC updateJournalCount @id = @project, @count = 1
@@ -958,7 +991,7 @@ BEGIN
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            insert into project (id, name, price, journals, person, branch) VALUES 
+            insert into project (id, name, price, journals, person_id, branch_id) VALUES 
             (@nextID, @name, @price, @journals, @person, @branch);
             FETCH NEXT FROM my_Cursor into  @nextID, @name, @price, @journals, @active, @person, @branch
         END
@@ -1015,7 +1048,7 @@ BEGIN
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            insert into methodology (id, step, description, experiment) VALUES 
+            insert into methodology (id, step, description, experiment_id) VALUES 
             (@nextID, @step, @description, @experiment);
             FETCH NEXT FROM my_Cursor into @nextID, @step, @description, @experiment, @active
         END
@@ -1042,7 +1075,7 @@ BEGIN
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            insert into objective (id, description, experiment) VALUES 
+            insert into objective (id, description, experiment_id) VALUES 
             (@nextID, @description, @experiment);
             FETCH NEXT FROM my_Cursor into @nextID, @description, @experiment, @active
         END
@@ -1069,7 +1102,7 @@ BEGIN
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            insert into experiment_image (id, photo, experiment) VALUES 
+            insert into experiment_image (id, photo, experiment_id) VALUES 
             (@nextID, @image, @experiment);
             FETCH NEXT FROM my_Cursor into @nextID, @image, @active, @experiment
         END
@@ -1105,32 +1138,32 @@ GO
 -- GO
 
 -- Card Trigger --
-GO
-CREATE OR ALTER TRIGGER card_trigger ON card
-INSTEAD OF INSERT
-AS
-BEGIN
-    DECLARE @table nvarchar(50) = 'card';
-    DECLARE @nextID int;
-    DECLARE @card_number bigint;
-    DECLARE @card_month int;
-    DECLARE @card_year int;
-    DECLARE @cvv int;
-    DECLARE @card_type bit;
-    DECLARE @active bit;
-    DECLARE @customer nvarchar(1000);
-    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+-- GO
+-- CREATE OR ALTER TRIGGER card_trigger ON card
+-- INSTEAD OF INSERT
+-- AS
+-- BEGIN
+--     DECLARE @table nvarchar(50) = 'card';
+--     DECLARE @nextID int;
+--     DECLARE @card_number bigint;
+--     DECLARE @card_month int;
+--     DECLARE @card_year int;
+--     DECLARE @cvv int;
+--     DECLARE @card_type bit;
+--     DECLARE @active bit;
+--     DECLARE @customer nvarchar(1000);
+--     DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
 
-    OPEN my_Cursor;
-    FETCH NEXT FROM my_Cursor into @nextID, @card_number, @card_month, @card_year, @cvv, @card_type, @active, @customer
-    WHILE @@FETCH_STATUS = 0 
-        BEGIN  
-            EXEC @nextID = getNextID @tableName = @table;
-            insert into card (id, card_number, card_month, card_year, cvv, card_type, customer) VALUES 
-            (@nextID, @card_number, @card_month, @card_year, @cvv, @card_type, @customer);
-            FETCH NEXT FROM my_Cursor into @nextID, @card_number, @card_month, @card_year, @cvv, @card_type, @active, @customer
-        END
-    CLOSE my_Cursor  
-    DEALLOCATE my_Cursor  
-END;
-GO
+--     OPEN my_Cursor;
+--     FETCH NEXT FROM my_Cursor into @nextID, @card_number, @card_month, @card_year, @cvv, @card_type, @active, @customer
+--     WHILE @@FETCH_STATUS = 0 
+--         BEGIN  
+--             EXEC @nextID = getNextID @tableName = @table;
+--             insert into card (id, card_number, card_month, card_year, cvv, card_type, customer) VALUES 
+--             (@nextID, @card_number, @card_month, @card_year, @cvv, @card_type, @customer);
+--             FETCH NEXT FROM my_Cursor into @nextID, @card_number, @card_month, @card_year, @cvv, @card_type, @active, @customer
+--         END
+--     CLOSE my_Cursor  
+--     DEALLOCATE my_Cursor  
+-- END;
+-- GO

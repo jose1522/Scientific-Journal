@@ -40,16 +40,16 @@ GO
 
 -- Populates consecutive table --
 GO
-Insert into consecutive (type, description, value, prefix, table_name) values
-    ( 'Proyectos','Consecutivo, pertenece a los proyectos',0, 'PRO-','project')
-    ,( 'Bitácoras Experimentales','Consecutivo, pertenece a las Bitácoras de los Experimentos',0, 'BEXP-','experiment')
-    ,( 'Roles','Consecutivo, pertenece a los roles',12, 'ROL-','user_role')
-    ,( 'Ramas Científicas','Consecutivo, pertenece a las Ramas Cintíficas',8, 'RAMC-','branch')
-    ,( 'Puestos','Consecutivo, pertenece a los Puestos',4, 'PU-','job')
-    ,( 'Nivel Académico','Consecutivo, pertenece al Nivel Académico',6, 'NIAC-','degree')
-    ,( 'Bitácora','Consecutivo, pertenece a la Bitácora de Seguridad', 0, 'BIT-','activity_log')
-    ,( 'Errores','Consecutivo, pertenece a los Errores en el sistema', 0, 'ERR-','error_log')
-    ,( 'Usuarios','Consecutivo, pertenece a los Usuarios de la Aplicación',1, 'USU-','person')
+Insert into consecutive (type_id, description, value, prefix, table_name_id) values
+    ( 1,'Consecutivo, pertenece a los proyectos',0, 'PRO-','project')
+    ,( 2,'Consecutivo, pertenece a las Bitácoras de los Experimentos',0, 'BEXP-','experiment')
+    ,( 3,'Consecutivo, pertenece a los roles',12, 'ROL-','user_role')
+    ,( 8,'Consecutivo, pertenece a las Ramas Cintíficas',8, 'RAMC-','branch')
+    ,( 4,'Consecutivo, pertenece a los Puestos',4, 'PU-','job')
+    ,( 7,'Consecutivo, pertenece al Nivel Académico',6, 'NIAC-','degree')
+    ,( 6,'Consecutivo, pertenece a la Bitácora de Seguridad', 0, 'BIT-','activity_log')
+    -- ,( 9,'Consecutivo, pertenece a los Errores en el sistema', 0, 'ERR-','error_log')
+    -- ,( 5,'Consecutivo, pertenece a los Usuarios de la Aplicación',1, 'USU-','person')
 GO
 
 -- Populate branch table --
@@ -81,7 +81,7 @@ GO
 
 -- Populate Jobs table --
 GO
-insert into job (name, user_role) VALUES
+insert into job (name, user_role_id) VALUES
     ('Directior de Laboratorio', 2)
     ,('Investigador de Primer Grado', 1)
     ,('Investigador de Segundo Grado', 4)
@@ -104,7 +104,7 @@ GO
 
 -- Populate Person Table --
 GO
-insert into person (nickname, password, isAdmin, name,  first_surname, second_surname, phone, degree, job) values
+insert into person (nickname, password, isAdmin, name,  first_surname, second_surname, phone, degree_id, job_id) values
     ('chris','123', 1, 'Christian', 'Hardin', 'Rodriguez', 22222222, 4, 0)
     ,('dean','123', 1, 'Dean', 'Fernandez', 'Bryant', 22222223, 4, 1)
     ,('jose','123', 0, 'Jose', 'Moya', 'Porras', 22222224, 4, 2)
@@ -112,7 +112,7 @@ GO
 
 -- Populate Project Table --
 GO
-insert into project (name, price, person, branch) values
+insert into project (name, price, person_id, branch_id) values
     ('Project A', 10.0, 0, 0)
     ,('Project B', 15.5, 1, 1)
     ,('Project C', 21, 2, 2)
@@ -120,7 +120,7 @@ GO
 
 -- Populate Experiment Table --
 GO
-insert into experiment (name, [description], main_objective, project, experimenter, witness) values
+insert into experiment (name, [description], main_objective, project_id, experimenter_id, witness_id) values
     ('Experiment A', 'Foo', 'Foo', 0, 0, 2)
     ,('Experiment B', 'Bar', 'Bar', 0, 1, 2)
 GO
@@ -135,7 +135,7 @@ GO
 
 -- Populate Experiment Equipment Table --
 GO
-insert into experiment_equipment (experiment, equipment) values
+insert into experiment_equipment (experiment_id, equipment_id) values
     (0,0)
     ,(0,2)
     ,(1,1)
@@ -144,7 +144,7 @@ GO
 
 -- Populate Methodology Table --
 GO
-insert into methodology (step,description, experiment) values
+insert into methodology (step,description, experiment_id) values
     (1, 'Step A', 0)
     ,(2, 'Step B', 0)
     ,(3, 'Step C',0)
@@ -152,7 +152,7 @@ GO
 
 -- Populate Objective Table --
 GO
-insert into objective (description, experiment) values
+insert into objective (description, experiment_id) values
     ('Goal A', 0)
     ,('Goal B', 0)
     ,('Goal C',0)
