@@ -14,9 +14,11 @@ from database.models import *
 admin = Blueprint('admin', '__name__')
 conf = yaml.full_load(open("database/formConfig.yml"))
 
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in core.app.config.get('ALLOWED_EXTENSIONS')
+
 
 def encryptData(unencryptedData):
     key = core.app.config.get('ENCRYPTION_KEY')
@@ -24,7 +26,8 @@ def encryptData(unencryptedData):
     encryptedData = cipher_suite.encrypt(bytes(unencryptedData.encode()))
     return encryptedData
 
-def logActivity(modelInstance:Model, activityDescription:dict, isError:bool):
+
+def logActivity(modelInstance:Model, activityDescription:dict, isError:bool=False):
     if isError:
         newRecord = ErrorLog(
                             id = 0,
@@ -34,6 +37,8 @@ def logActivity(modelInstance:Model, activityDescription:dict, isError:bool):
                             description = activityDescription['description'],
                             summary = activityDescription['summary']
         )
+        db.session.add(newRecord)
+        db.session.commit()
     else :
         newRecord = ActivityLog(
                             id = 0,
@@ -42,8 +47,7 @@ def logActivity(modelInstance:Model, activityDescription:dict, isError:bool):
                             date_time = datetime.today(),
                             description = activityDescription['description']
         )
-    db.session.add(newRecord)
-
+        db.session.add(newRecord)
 
 
 @admin.route('/')
@@ -63,6 +67,9 @@ def userCRUD():
     formTemplate:forms.ModelForm = getattr(forms, formName)
     formInstance = formTemplate() # instantiate the class
     req = request.form
+
+    def redirectToDefaultRoute():
+        return redirect(url_for('admin.userCRUD'))
 
     def populateDataModel(modelInstance):
         # Updates the form instance with values from the website
@@ -94,7 +101,7 @@ def userCRUD():
 
                 # Raises an exception if the ID doesn't exist
                 if modelInstance is None:
-                    raise Exception('ID not found')
+                    raise Exception('ID {0} not found'.format(idParameter))
 
                 # Checks if the record hasn't been soft-deleted
                 if hasattr(modelInstance, 'active'):
@@ -105,11 +112,21 @@ def userCRUD():
                 for field in formInstance:
                     if field.name in foreignKeyMappings:
                         formInstance[field.name].data = getattr(modelInstance, foreignKeyMappings[field.name])
-            except:
+
+                # Log request to the DB
+                logActivity(modelInstance, {'summary': '', 'description': '{0} request for ID {1}'.format(request.method, idParameter)})
+                db.session.commit()
+
+            except Exception as e:
+                modelInstance = model()
+                # Log error to the DB
+                logActivity(modelInstance, {'summary': str(e), 'description': '{0} request'.format(request.method)},True)
+                db.session.commit()
                 abort(404)
     else:
         # req = request.form
         buttonClicked = str(req['form_button']).lower()
+        modelInstance = model()
 
         if buttonClicked == 'create':
 
@@ -155,13 +172,18 @@ def userCRUD():
 
                     # Makes insert and commits
                     db.session.execute("Insert into {0} ({1}) values ({2})".format(tableName, ", ".join(formFieldNames),", ".join(formFieldValues)))
+                    logActivity(modelInstance, {'summary': '', 'description': '{0} request ({1})'.format(request.method, buttonClicked)})
                     db.session.commit()
-                    flash('Form submitted successfully!', category='success')
+                    return redirectToDefaultRoute()
 
             except Exception as e:
-                flashErrors(str(e))
-            else:
-                flashErrors()
+                if len(formInstance.errors.items()) > 0:
+                    flashErrors()
+                    logActivity(modelInstance, {'summary': ';'.join(formInstance.errors.items()), 'description': '{0} request ({1})'.format(request.method, buttonClicked)},True)
+                else:
+                    flashErrors(str(e))
+                    logActivity(modelInstance, {'summary': ';'.join(formInstance.errors.items()), 'description': '{0} request ({1})'.format(request.method, buttonClicked)}, True)
+                db.session.commit()
 
         elif idParameter:
             try:
@@ -203,13 +225,23 @@ def userCRUD():
                     db.session.add(modelInstance)
                     newForm = False
 
+                # Create log in the DB
+                logActivity(modelInstance, {'summary': '', 'description': '{0} request ({1}) for id {2}'.format(request.method, buttonClicked, idParameter)})
                 db.session.commit()
-                flash('Form submitted successfully!', category='success')
+
+                if buttonClicked == 'delete':
+                    return redirectToDefaultRoute()
+                else:
+                    flash('Form submitted successfully!', category='success')
 
             except Exception as e:
-                flashErrors()
+                flashErrors(str(e))
+                logActivity(modelInstance, {'summary': ';'.join(formInstance.errors.items()), 'description': '{0} request ({1}) for id {2}'.format(request.method, buttonClicked, idParameter)}, True)
+                db.session.commit()
         else:
             flash('No id was provided', category='danger')
+            logActivity(modelInstance, {'summary': 'No id was provided', 'description': '{0} request ({1})'.format(request.method, buttonClicked)}, True)
+            db.session.commit()
 
     resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm))
     return resp
@@ -236,6 +268,9 @@ def formCRUD(name):
     formTemplate:forms.ModelForm = getattr(forms, formName)
     formInstance = formTemplate() # instantiate the class
 
+    def redirectToDefaultRoute():
+        return redirect(url_for('admin.formCRUD', name=name))
+
     def populateDataModel(modelInstance):
         for item in formInstance.data:
             try:
@@ -249,19 +284,20 @@ def formCRUD(name):
     def flashErrors(errMessage=None):
         db.session.rollback()
         if not errMessage:
-            for fieldName, errorMessages in formInstance.errors.items():
+               for fieldName, errorMessages in formInstance.errors.items():
                 for err in errorMessages:
                     flash("Error! Field name: {0}; Error: {1}".format(fieldName, err), category='danger')
         else:
-            flash(errMessage, category='danger')
+                flash(errMessage, category='danger')
 
     if request.method == 'GET':
+        modelInstance = model()
         if idParameter:
             newForm = False
             try:
                 modelInstance = model.query.get(idParameter)
                 if modelInstance is None:
-                    raise Exception('ID not found')
+                    raise Exception('ID {0} not found'.format(idParameter))
 
                 if hasattr(modelInstance, 'active'):
                     abort(400) if modelInstance.__getattribute__('active') == 0 else None
@@ -286,11 +322,14 @@ def formCRUD(name):
                         formInstance[field.name].data = getattr(modelInstance, foreignKeyMappings[field.name])
                 logActivity(modelInstance,{'summary':'GET HTTP Call','description' :'GET Request with argument id: '+ idParameter},False)
             except Exception as e:
-                print(e)
+                logActivity(modelInstance, {'summary': str(e), 'description': '{0} request'.format(request.method)}, True)
                 abort(404)
+        # else:
+        #     logActivity(modelInstance, {'summary': '', 'description': '{0} request'.format(request.method)})
     else:
         req = request.form
         buttonClicked = str(req['form_button']).lower()
+        modelInstance = model()
 
         if buttonClicked == 'create':
             formFieldNames = [x for x in list(formInstance.data.keys()) if x != 'csrf_token']
@@ -299,11 +338,16 @@ def formCRUD(name):
             if formInstance.validate_on_submit():
                 try:
                     db.session.execute("Insert into {0} ({1}) values ({2})".format(tableName, ", ".join(formFieldNames),", ".join(formFieldValues)))
+                    logActivity(modelInstance, {'summary': 'New record added', 'description': 'POST Request (Create)'})
                     db.session.commit()
                     flash('Form submitted successfully!', category='success')
+                    return redirectToDefaultRoute()
+
                 except Exception as e:
+                    logActivity(modelInstance, {'summary': str(e), 'description': 'POST Request (Create)'}, True)
                     flashErrors(str(e))
             else:
+                logActivity(modelInstance, {'summary': ";".join(formInstance.errors.items()), 'description': 'POST Request ({0})'.format(buttonClicked)}, True)
                 flashErrors()
 
         elif idParameter:
@@ -313,6 +357,7 @@ def formCRUD(name):
                     if hasattr(model, 'active'):
                         model.__setattr__('active', '0')
                         db.session.add(modelInstance)
+                        newForm = True
                     else:
                         db.session.delete(modelInstance)
 
@@ -321,12 +366,20 @@ def formCRUD(name):
                     db.session.add(modelInstance)
                     newForm = False
 
-                db.session.commit()
-                flash('Form submitted successfully!', category='success')
+                logActivity(modelInstance, {'summary': "", 'description': 'POST Request ({0}) for ID {1}'.format(buttonClicked,idParameter)})
+                db.session.commit()  # commit after logActivity
+                if newForm:
+                    return redirectToDefaultRoute()  # Redirect to default route
+                else:
+                    flash('Form submitted successfully!', category='success')
 
             except Exception as e:
-                flashErrors()
+                flashErrors(str(e)) # this already includes rollback
+                logActivity(modelInstance, {'summary': str(e), 'description': 'POST Request ({0}) for ID {1}'.format(buttonClicked,idParameter)}, True)
+                db.session.commit()
+
         else:
+            logActivity(modelInstance, {'summary': "User did not provide an ID parameter", 'description': 'POST Request'}, True)
             flash('No id was provided',category='danger')
 
     resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm))
@@ -337,9 +390,3 @@ def formCRUD(name):
 def page_not_found(e):
     # note that we set the 404 status explicitly
     return render_template('errors/404.html'), 404
-
-# @admin.errorhandler(IntegrityError)
-# def handle_bad_request(e):
-#     db.session.rollback()
-#     flash("Error! A duplicate value has been submitted.")
-#     return redirect(request.referrer)

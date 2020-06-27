@@ -1151,6 +1151,36 @@ BEGIN
 END;
 GO
 
+-- Activiy Log Trigger --
+GO
+CREATE OR ALTER TRIGGER error_log_trigger ON error_log
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'error_log';
+    DECLARE @nextID int;
+    DECLARE @tableNameID nvarchar(50);
+    DECLARE @personID int;
+    DECLARE @dateTime DATETIME;
+    DECLARE @description NVARCHAR(200);
+    DECLARE @summary NVARCHAR(2000);
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @personID, @dateTime, @tableNameID, @description, @summary
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into error_log (id, table_name_id, person_id, [description], summary) VALUES 
+            (@nextID, @tableNameID, @personID, @description, @summary);
+            FETCH NEXT FROM my_Cursor into @nextID, @personID, @dateTime, @tableNameID, @description, @summary
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+END;
+GO
+
+
 -- Customer Trigger --
 -- GO
 -- CREATE OR ALTER TRIGGER customer_trigger ON customer
