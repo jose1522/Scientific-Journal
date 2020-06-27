@@ -105,21 +105,20 @@ GO
 CREATE TABLE person (
     id int primary key,
     nickname nvarchar(50) not null,
-    password nvarchar(50) not null,
+    password nvarchar(500) not null,
     isAdmin bit default 0 not null,
     active bit default 1 not null,
     name nvarchar(50) not null,
-    first_surname nvarchar(50) not null,
-    second_surname nvarchar(50) not null,
+    firstSurname nvarchar(50) not null,
+    secondSurname nvarchar(50) not null,
     phone int not null,
-    signature varbinary(max),
-    photo varbinary(max),
+    signature nvarchar(300),
+    photo nvarchar(300),
     degree_id int FOREIGN KEY references degree(id) on delete cascade not null,
     job_id int FOREIGN KEY references job(id) on delete cascade not null,
     constraint ck_id_person check (id >= 0),
     constraint unique_nickname unique(nickname),
-    constraint unique_fullname_person unique(name, first_surname, second_surname),
-    constraint unique_phone_person unique(phone)
+    constraint unique_fullname_person unique(name, firstSurname, secondSurname)
 );
 GO
 
@@ -295,7 +294,7 @@ GO
 GO
 CREATE Table experiment_image(
     id int PRIMARY KEY,
-    photo varbinary(max),
+    photo nvarchar(300),
     active bit default 1,
     experiment_id int REFERENCES experiment(id) on delete cascade not null,
     constraint ck_id_experiment_image check (id >= 0)
@@ -311,7 +310,7 @@ GO
 -- GO
 -- CREATE Table customer (
 --     id nvarchar(1000) PRIMARY KEY,
---     photo varbinary(max),
+--     photo nvarchar(300),
 --     active bit default 1,
 --     constraint ck_id_customer check (id >= 0)
 -- );
@@ -538,8 +537,8 @@ SELECT
     e.description,
     e.main_objective,
     pr.name,
-    CONCAT(p.second_surname,' ',p.first_surname,', ',p.name),
-    CONCAT(w.second_surname,' ',w.first_surname,', ',w.name),
+    CONCAT(p.secondSurname,' ',p.firstSurname,', ',p.name),
+    CONCAT(w.secondSurname,' ',w.firstSurname,', ',w.name),
     STRING_AGG(CONCAT('name: ', eq.name,'; model: ', eq.model,', serial:',eq.serial),' \n '),
     STRING_AGG(CONCAT('step: ',m.step,' description: ', m.description), ' \n '),
     STRING_AGG(o.description, ' \n ')
@@ -564,8 +563,8 @@ GROUP BY
     e.description,
     e.main_objective,
     pr.name,
-    CONCAT(w.second_surname,' ',w.first_surname,', ',w.name),
-    CONCAT(p.second_surname,' ',p.first_surname,', ',p.name)
+    CONCAT(w.secondSurname,' ',w.firstSurname,', ',w.name),
+    CONCAT(p.secondSurname,' ',p.firstSurname,', ',p.name)
 GO
 
 -- Project View --
@@ -585,7 +584,7 @@ SELECT
     pr.name,
     pr.price,
     pr.journals,
-    CONCAT(p.second_surname,' ',p.first_surname,', ',p.name),
+    CONCAT(p.secondSurname,' ',p.firstSurname,', ',p.name),
     b.name
 FROM 
     project pr
@@ -624,7 +623,7 @@ CREATE VIEW view_person(
     code,
     nickname,
     name,
-    first_surname,
+    firstSurname,
     secod_surname,
     phone,
     signature,
@@ -637,8 +636,8 @@ SELECT
     concat(coalesce(c.prefix, ''),p.id + COALESCE(c.value,0)),
     p.nickname,
     p.name,
-    p.first_surname,
-    p.second_surname,
+    p.firstSurname,
+    p.secondSurname,
     p.phone,
     p.signature,
     p.photo,
@@ -650,6 +649,19 @@ FROM
     left join job j on j.id = p.job_id
     left join table_ref t on t.name = 'person'
     left join consecutive c on t.name = c.table_name_id
+GO
+
+-- Function to return max value
+
+GO
+CREATE OR ALTER FUNCTION maxInt(@valueA int, @valueB int)
+returns INT
+AS
+BEGIN
+    if @valueA > @valueB
+        return @valueA
+    return @valueB
+END
 GO
 
 -- Procedure to get next available primary key for any table --
@@ -678,7 +690,7 @@ BEGIN
     DECLARE @current_value int;
     update table_ref with (updlock)
     set 
-    current_value = current_value - 1
+    current_value = current_value - 1 
     where [name] = @tableName;
 END
 GO
@@ -747,7 +759,7 @@ BEGIN
     FETCH NEXT FROM my_Cursor into @nextID, @type, @description, @value, @prefix, @table_name
     WHILE @@FETCH_STATUS = 0 
         BEGIN
-            EXEC reverseID @tableName = @table;
+            --EXEC reverseID @tableName = @table;
             update table_ref set available=1 where name = @table_name;
             update code set available=1 where id = @type;
             FETCH NEXT FROM my_Cursor into @nextID, @type, @description, @value, @prefix, @table_name
@@ -877,29 +889,29 @@ BEGIN
     DECLARE @table nvarchar(50) = 'person';
     DECLARE @nextID int;
     DECLARE @nickname nvarchar(50);
-    DECLARE @password nvarchar(50);
+    DECLARE @password nvarchar(500);
     DECLARE @isAdmin bit;
     DECLARE @active bit;
     DECLARE @name nvarchar(50);
-    DECLARE @first_surname nvarchar(50);
-    DECLARE @second_surname nvarchar(50);
+    DECLARE @firstSurname nvarchar(50);
+    DECLARE @secondSurname nvarchar(50);
     DECLARE @phone int;
-    DECLARE @signature varbinary(max);
-    DECLARE @photo varbinary(max);
+    DECLARE @signature nvarchar(300);
+    DECLARE @photo nvarchar(300);
     DECLARE @degree int;
     DECLARE @job int;
     DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
 
     --Select * from inserted
     OPEN my_Cursor;
-    FETCH NEXT FROM my_Cursor into @nextID, @nickname, @password, @isAdmin, @active, @name, @first_surname, @second_surname, @phone, @signature, @photo, @degree, @job
-    --select @nextID, @nickname, @password, @isAdmin, @active, @name, @first_surname, @second_surname, @phone, @signature, @photo, @degree, @job
+    FETCH NEXT FROM my_Cursor into @nextID, @nickname, @password, @isAdmin, @active, @name, @firstSurname, @secondSurname, @phone, @signature, @photo, @degree, @job
+    --select @nextID, @nickname, @password, @isAdmin, @active, @name, @firstSurname, @secondSurname, @phone, @signature, @photo, @degree, @job
     WHILE @@FETCH_STATUS = 0 
         BEGIN  
             EXEC @nextID = getNextID @tableName = @table;
-            insert into person (id, nickname, password, isAdmin, name, first_surname, second_surname, phone, signature, photo, degree_id, job_id) VALUES 
-            (@nextID, @nickname, @password, @isAdmin, @name, @first_surname, @second_surname, @phone, @signature, @photo, @degree, @job);
-            FETCH NEXT FROM my_Cursor into  @nextID, @nickname, @password, @isAdmin, @active, @name, @first_surname, @second_surname, @phone, @signature, @photo, @degree, @job
+            insert into person (id, nickname, password, isAdmin, name, firstSurname, secondSurname, phone, signature, photo, degree_id, job_id) VALUES 
+            (@nextID, @nickname, @password, @isAdmin, @name, @firstSurname, @secondSurname, @phone, @signature, @photo, @degree, @job);
+            FETCH NEXT FROM my_Cursor into  @nextID, @nickname, @password, @isAdmin, @active, @name, @firstSurname, @secondSurname, @phone, @signature, @photo, @degree, @job
         END
     CLOSE my_Cursor  
     DEALLOCATE my_Cursor  
@@ -1092,7 +1104,7 @@ AS
 BEGIN
     DECLARE @table nvarchar(50) = 'experiment_image';
     DECLARE @nextID int;
-    DECLARE @image varbinary(max);
+    DECLARE @image nvarchar(300);
     DECLARE @experiment int;
     DECLARE @active bit;
     DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
@@ -1111,6 +1123,34 @@ BEGIN
 END;
 GO
 
+-- Activiy Log Trigger --
+GO
+CREATE OR ALTER TRIGGER activity_log_trigger ON activity_log
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @table nvarchar(50) = 'activity_log';
+    DECLARE @nextID int;
+    DECLARE @tableNameID nvarchar(50);
+    DECLARE @personID int;
+    DECLARE @dateTime DATETIME;
+    DECLARE @description NVARCHAR(200);
+    DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
+
+    OPEN my_Cursor;
+    FETCH NEXT FROM my_Cursor into @nextID, @tableNameID, @personID, @dateTime, @description
+    WHILE @@FETCH_STATUS = 0 
+        BEGIN  
+            EXEC @nextID = getNextID @tableName = @table;
+            insert into activity_log (id, table_name_id, person_id, [description]) VALUES 
+            (@nextID, @tableNameID, @personID, @description);
+            FETCH NEXT FROM my_Cursor into @nextID, @tableNameID, @personID, @dateTime, @description
+        END
+    CLOSE my_Cursor  
+    DEALLOCATE my_Cursor  
+END;
+GO
+
 -- Customer Trigger --
 -- GO
 -- CREATE OR ALTER TRIGGER customer_trigger ON customer
@@ -1119,7 +1159,7 @@ GO
 -- BEGIN
 --     DECLARE @table nvarchar(50) = 'customer';
 --     DECLARE @nextID int;
---     DECLARE @photo varbinary(max);
+--     DECLARE @photo nvarchar(300);
 --     DECLARE @active bit;
 --     DECLARE my_Cursor CURSOR FOR SELECT * FROM INSERTED; 
 

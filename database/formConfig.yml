@@ -1,0 +1,42 @@
+consecutive:
+  modelName: "Consecutive"
+  formName: "consecutiveForm"
+  htmlName: "consecutive_form.html"
+  foreignKeyMappings:
+    - 'table_name_id': 'table_name'
+    - 'type_id': 'type'
+
+job:
+  modelName: "Job"
+  formName: "jobForm"
+  htmlName: "job_form.html"
+  foreignKeyMappings:
+    - 'user_role_id': 'user_role'
+
+user-role:
+  modelName: "UserRole"
+  formName: "userRoleForm"
+  htmlName: "user_role_form.html"
+
+degree:
+  modelName: "Degree"
+  formName: "degreeForm"
+  htmlName: "degree_form.html"
+
+code:
+  modelName: "Code"
+  formName: "codeForm"
+  htmlName: "code_form.html"
+
+branch:
+  modelName: "Branch"
+  formName: "branchForm"
+  htmlName: "branch_form.html"
+
+project:
+  modelName: "Project"
+  formName: "projectForm"
+  htmlName: "project_form.html"
+  foreignKeyMappings:
+    - 'person_id': 'person'
+    - 'branch_id': 'branch'

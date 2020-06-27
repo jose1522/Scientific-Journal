@@ -2,9 +2,12 @@
 from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Index, Integer, LargeBinary, Table, Unicode, text
 # from sqlalchemy.dialects.mssql import Integer
 from sqlalchemy.orm import relationship
-
+from sqlalchemy_utils import EncryptedType
+from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
+import os
 from sqlalchemy.ext.declarative import declarative_base
-from .database import db
+
+from . import db
 # Base = declarative_base()
 
 Base = db
@@ -23,7 +26,7 @@ class Code(Model):
     __tablename__ = 'code'
 
     id = Column(Integer, primary_key=True)
-    description = Column(Unicode(50), nullable=False, unique=True)
+    description = Column(Unicode(50), nullable=False, unique=True, info={'label': 'Code Description'})
     available = Column(Integer, server_default=text("((1))"))
 
     def __repr__(self):
@@ -34,8 +37,8 @@ class Degree(Model):
     __tablename__ = 'degree'
 
     id = Column(Integer, primary_key=True)
-    name = Column(Unicode(50), nullable=False)
-    description = Column(Unicode(50), nullable=False)
+    name = Column(Unicode(50), nullable=False, info={'label': 'Degree Name'})
+    description = Column(Unicode(50), nullable=False, info={'label': 'Degree Description'})
     active = Column(Integer, index=True, server_default=text("((1))"))
 
 
@@ -70,8 +73,8 @@ class UserRole(Model):
     __tablename__ = 'user_role'
 
     id = Column(Integer, primary_key=True)
-    name = Column(Unicode(50), nullable=False, unique=True)
-    description = Column(Unicode(100), nullable=False)
+    name = Column(Unicode(50), nullable=False, unique=True, info={'label': 'User Role Name'})
+    description = Column(Unicode(100), nullable=False, info={'label': 'User Role Description'})
     active = Column(Integer, index=True, server_default=text("((1))"))
 
     def __repr__(self):
@@ -147,7 +150,7 @@ t_view_person = Table(
     Column('code', Unicode(62), nullable=False),
     Column('nickname', Unicode(50), nullable=False),
     Column('name', Unicode(50), nullable=False),
-    Column('first_surname', Unicode(50), nullable=False),
+    Column('firstSurname', Unicode(50), nullable=False),
     Column('secod_surname', Unicode(50), nullable=False),
     Column('phone', Integer, nullable=False),
     Column('signature', LargeBinary),
@@ -195,8 +198,8 @@ class Job(Model):
     __tablename__ = 'job'
 
     id = Column(Integer, primary_key=True)
-    name = Column(Unicode(50), nullable=False, unique=True)
-    active = Column(Integer, nullable=False, index=True, server_default=text("((1))"))
+    name = Column(Unicode(50), nullable=False, unique=True, info={'label': 'Job Name'})
+    active = Column(Integer, nullable=True, index=True, server_default=text("((1))"))
     user_role_id = Column(ForeignKey('user_role.id'), nullable=False)
     user_role = relationship('UserRole')
 
@@ -207,22 +210,23 @@ class Job(Model):
 class Person(Model):
     __tablename__ = 'person'
     __table_args__ = (
-        Index('unique_fullname_person', 'name', 'first_surname', 'second_surname', unique=True),
+        Index('unique_fullname_person', 'name', 'firstSurname', 'secondSurname', unique=True),
     )
 
     id = Column(Integer, primary_key=True)
-    nickname = Column(Unicode(50), nullable=False, unique=True)
-    password = Column(Unicode(50), nullable=False)
-    isAdmin = Column(Integer, nullable=False, server_default=text("((0))"))
+    nickname = Column(Unicode(50), nullable=False, unique=True, info={'label': 'Nickname'})
+    # noinspection PyDeprecation
+    password = Column(Unicode(500), nullable=True,  info={'label': 'Password'})
+    isAdmin = Column(Integer, nullable=False, server_default=text("((0))"),  info={'label': 'User Rights'})
     active = Column(Integer, nullable=False, index=True, server_default=text("((1))"))
-    name = Column(Unicode(50), nullable=False)
-    first_surname = Column(Unicode(50), nullable=False)
-    second_surname = Column(Unicode(50), nullable=False)
-    phone = Column(Integer, nullable=False, unique=True)
-    signature = Column(LargeBinary)
-    photo = Column(LargeBinary)
-    degree_id = Column(ForeignKey('degree.id'), nullable=False)
-    job_id = Column(ForeignKey('job.id'), nullable=False)
+    name = Column(Unicode(50), nullable=False, info={'label': 'First Name'})
+    firstSurname = Column(Unicode(50), nullable=False,  info={'label': 'Surname 1'})
+    secondSurname = Column(Unicode(50), nullable=True,  info={'label': 'Surname 2'})
+    phone = Column(Integer, nullable=False, info={'label': 'Phone Number'})
+    signature = Column(Unicode(300))
+    photo = Column(Unicode(300))
+    degree_id = Column(Integer, ForeignKey('degree.id'), nullable=False)
+    job_id = Column(Integer, ForeignKey('job.id'), nullable=False)
     degree = relationship('Degree')
     job = relationship('Job')
 
@@ -262,7 +266,7 @@ class Project(Model):
     )
 
     id = Column(Integer, primary_key=True)
-    name = Column(Unicode(50), nullable=False, unique=True)
+    name = Column(Unicode(50), nullable=False)
     price = Column(Float(53), server_default=text("((0))"))
     journals = Column(Integer, server_default=text("((0))"))
     active = Column(Integer, server_default=text("((1))"))

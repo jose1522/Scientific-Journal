@@ -6,9 +6,10 @@ from flask_session import Session
 
 from admin.routes import admin
 from api.routes import api
-from database.database import db
-from flask_migrate import Migrate
+from database import db
+# from database.database import db
 from public.routes import public
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config.from_pyfile('settings.py')

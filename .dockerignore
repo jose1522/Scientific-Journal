@@ -1,5 +1,6 @@
-/venv
 .env
-/documents
 /.idea
+.sql
+.png
+.svg
 __pycache__

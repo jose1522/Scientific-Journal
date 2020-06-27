@@ -104,7 +104,7 @@ GO
 
 -- Populate Person Table --
 GO
-insert into person (nickname, password, isAdmin, name,  first_surname, second_surname, phone, degree_id, job_id) values
+insert into person (nickname, password, isAdmin, name,  firstSurname, secondSurname, phone, degree_id, job_id) values
     ('chris','123', 1, 'Christian', 'Hardin', 'Rodriguez', 22222222, 4, 0)
     ,('dean','123', 1, 'Dean', 'Fernandez', 'Bryant', 22222223, 4, 1)
     ,('jose','123', 0, 'Jose', 'Moya', 'Porras', 22222224, 4, 2)
