@@ -40,3 +40,8 @@ project:
   foreignKeyMappings:
     - 'person_id': 'person'
     - 'branch_id': 'branch'
+
+equipment:
+  modelName: "Equipment"
+  formName: "equipmentForm"
+  htmlName: "equipment_form.html"

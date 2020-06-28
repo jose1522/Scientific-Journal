@@ -80,106 +80,6 @@ class UserRole(Model):
     def __repr__(self):
         return str([{'id':self.id},{'name':self.name}])
 
-t_view_activity_log = Table(
-    'view_activity_log', metadata,
-    Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
-    Column('person', Unicode(50)),
-    Column('date_time', DateTime),
-    Column('description', Unicode(200), nullable=False)
-)
-
-
-t_view_branch = Table(
-    'view_branch', metadata,
-    Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
-    Column('name', Unicode(50), nullable=False)
-)
-
-
-t_view_degree = Table(
-    'view_degree', metadata,
-    Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
-    Column('name', Unicode(50), nullable=False),
-    Column('description', Unicode(50), nullable=False)
-)
-
-
-t_view_error_log = Table(
-    'view_error_log', metadata,
-    Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
-    Column('person', Unicode(50)),
-    Column('date_time', DateTime),
-    Column('description', Unicode(200), nullable=False),
-    Column('summary', Unicode(2000), nullable=False)
-)
-
-
-t_view_experiment = Table(
-    'view_experiment', metadata,
-    Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
-    Column('name', Unicode(50), nullable=False),
-    Column('date', Date),
-    Column('description', Unicode(2000), nullable=False),
-    Column('main_objective', Unicode(3000), nullable=False),
-    Column('project', Unicode(50)),
-    Column('experimenter', Unicode(153), nullable=False),
-    Column('withness', Unicode(153), nullable=False),
-    Column('equipment', Unicode(4000)),
-    Column('methodology', Unicode(4000)),
-    Column('objective', Unicode(4000))
-)
-
-
-t_view_job = Table(
-    'view_job', metadata,
-    Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
-    Column('name', Unicode(50), nullable=False),
-    Column('role', Unicode(50))
-)
-
-
-t_view_person = Table(
-    'view_person', metadata,
-    Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
-    Column('nickname', Unicode(50), nullable=False),
-    Column('name', Unicode(50), nullable=False),
-    Column('firstSurname', Unicode(50), nullable=False),
-    Column('secod_surname', Unicode(50), nullable=False),
-    Column('phone', Integer, nullable=False),
-    Column('signature', LargeBinary),
-    Column('photo', LargeBinary),
-    Column('degree', Unicode(50)),
-    Column('job', Unicode(50))
-)
-
-
-t_view_project = Table(
-    'view_project', metadata,
-    Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
-    Column('name', Unicode(50), nullable=False),
-    Column('price', Float(53)),
-    Column('journals', Integer),
-    Column('person', Unicode(153), nullable=False),
-    Column('branch', Unicode(50))
-)
-
-
-t_view_user_role = Table(
-    'view_user_role', metadata,
-    Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
-    Column('name', Unicode(50), nullable=False),
-    Column('description', Unicode(100), nullable=False)
-)
-
 
 class Consecutive(Model):
     __tablename__ = 'consecutive'
@@ -283,10 +183,10 @@ class Experiment(Model):
     )
 
     id = Column(Integer, primary_key=True)
-    name = Column(Unicode(50), nullable=False)
-    date = Column(Date, server_default=text("(getdate())"))
-    description = Column(Unicode(2000), nullable=False)
-    main_objective = Column(Unicode(3000), nullable=False)
+    name = Column(Unicode(50), nullable=False, info={'label': 'Experiment Name'})
+    date = Column(Date, server_default=text("(getdate())"), info={'label': 'Experiment Date'})
+    description = Column(Unicode(2000), nullable=False, info={'label': 'Description'})
+    main_objective = Column(Unicode(3000), nullable=False, info={'label': 'Main Objective'})
     active = Column(Integer, server_default=text("((1))"))
     project_id = Column(ForeignKey('project.id'), nullable=False)
     experimenter_id = Column(ForeignKey('person.id'))
@@ -295,6 +195,9 @@ class Experiment(Model):
     experimenter = relationship('Person', primaryjoin='Experiment.experimenter_id == Person.id')
     project = relationship('Project')
     witness = relationship('Person', primaryjoin='Experiment.witness_id == Person.id')
+
+    # Adding methodology relationship
+    methodology = relationship('Methodology',  back_populates="experiment")
 
 t_experiment_equipment = Table(
     'experiment_equipment', metadata,
@@ -329,7 +232,7 @@ class Methodology(Model):
     experiment_id = Column(ForeignKey('experiment.id'), nullable=False)
     active = Column(Integer, server_default=text("((1))"))
 
-    experiment = relationship('Experiment')
+    experiment = relationship('Experiment', back_populates="methodology")
 
 
 class Objective(Model):
@@ -344,3 +247,103 @@ class Objective(Model):
     active = Column(Integer, server_default=text("((1))"))
 
     experiment = relationship('Experiment')
+
+t_view_activity_log = Table(
+    'view_activity_log', metadata,
+    Column('id', Integer, nullable=False),
+    Column('code', Unicode(62), nullable=False),
+    Column('person', Unicode(50)),
+    Column('date_time', DateTime),
+    Column('description', Unicode(200), nullable=False)
+)
+
+
+t_view_branch = Table(
+    'view_branch', metadata,
+    Column('id', Integer, nullable=False),
+    Column('code', Unicode(62), nullable=False),
+    Column('name', Unicode(50), nullable=False)
+)
+
+
+t_view_degree = Table(
+    'view_degree', metadata,
+    Column('id', Integer, nullable=False),
+    Column('code', Unicode(62), nullable=False),
+    Column('name', Unicode(50), nullable=False),
+    Column('description', Unicode(50), nullable=False)
+)
+
+
+t_view_error_log = Table(
+    'view_error_log', metadata,
+    Column('id', Integer, nullable=False),
+    Column('code', Unicode(62), nullable=False),
+    Column('person', Unicode(50)),
+    Column('date_time', DateTime),
+    Column('description', Unicode(200), nullable=False),
+    Column('summary', Unicode(2000), nullable=False)
+)
+
+
+t_view_experiment = Table(
+    'view_experiment', metadata,
+    Column('id', Integer, nullable=False),
+    Column('code', Unicode(62), nullable=False),
+    Column('name', Unicode(50), nullable=False),
+    Column('date', Date),
+    Column('description', Unicode(2000), nullable=False),
+    Column('main_objective', Unicode(3000), nullable=False),
+    Column('project', Unicode(50)),
+    Column('experimenter', Unicode(153), nullable=False),
+    Column('withness', Unicode(153), nullable=False),
+    Column('equipment', Unicode(4000)),
+    Column('methodology', Unicode(4000)),
+    Column('objective', Unicode(4000))
+)
+
+
+t_view_job = Table(
+    'view_job', metadata,
+    Column('id', Integer, nullable=False),
+    Column('code', Unicode(62), nullable=False),
+    Column('name', Unicode(50), nullable=False),
+    Column('role', Unicode(50))
+)
+
+
+t_view_person = Table(
+    'view_person', metadata,
+    Column('id', Integer, nullable=False),
+    Column('code', Unicode(62), nullable=False),
+    Column('nickname', Unicode(50), nullable=False),
+    Column('name', Unicode(50), nullable=False),
+    Column('firstSurname', Unicode(50), nullable=False),
+    Column('secod_surname', Unicode(50), nullable=False),
+    Column('phone', Integer, nullable=False),
+    Column('signature', LargeBinary),
+    Column('photo', LargeBinary),
+    Column('degree', Unicode(50)),
+    Column('job', Unicode(50))
+)
+
+
+t_view_project = Table(
+    'view_project', metadata,
+    Column('id', Integer, nullable=False),
+    Column('code', Unicode(62), nullable=False),
+    Column('name', Unicode(50), nullable=False),
+    Column('price', Float(53)),
+    Column('journals', Integer),
+    Column('person', Unicode(153), nullable=False),
+    Column('branch', Unicode(50))
+)
+
+
+t_view_user_role = Table(
+    'view_user_role', metadata,
+    Column('id', Integer, nullable=False),
+    Column('code', Unicode(62), nullable=False),
+    Column('name', Unicode(50), nullable=False),
+    Column('description', Unicode(100), nullable=False)
+)

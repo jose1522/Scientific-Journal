@@ -1,0 +1,17 @@
+{% macro render_methodology_list() -%}
+    <label class="control-label" for="sortablelist">Methodology</label>
+    <div class="col mb-3">
+        <div class="list-group list-group-flush" name='methodologies' id="sortablelist">
+        
+            <li class="list-group-item">
+                <button type="button" class="delete btn-link mr-3">
+                    <img src="/static/img/trashcan-sm.svg">
+                </button> 
+                <input contenteditable="true" class="methodology" placeholder="Enter some text here" required> 
+                </input>
+            </li>
+    
+        </div>
+        <input type="button" class="btn btn-secondary addMethodologyBtn" value="Add new step">    
+    </div>
+{%- endmacro %}

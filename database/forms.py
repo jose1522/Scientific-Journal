@@ -1,11 +1,11 @@
 from .models import *
-from wtforms_alchemy import model_form_factory, QuerySelectField
-from flask_wtf import FlaskForm, file
-from wtforms import StringField,IntegerField,BooleanField,FileField,PasswordField, SelectField
-from wtforms.ext.sqlalchemy.fields import QuerySelectField as qs
 from database import db
-from wtforms.validators import DataRequired
-from flask_wtf import FlaskForm
+from wtforms_alchemy import model_form_factory, QuerySelectField, ModelFieldList, ModelFormField
+from flask_wtf import FlaskForm, file
+from wtforms import StringField,IntegerField,BooleanField,FileField,PasswordField, SelectField, TextAreaField, MultipleFileField
+from wtforms.ext.sqlalchemy.fields import QuerySelectField as qs
+from wtforms.validators import DataRequired, Length
+from wtforms.fields import FormField
 
 BaseModelForm = model_form_factory(FlaskForm)
 
@@ -115,3 +115,38 @@ class personForm(FlaskForm):
     )
     signature = FileField('Signature')
     photo = FileField('Photography')
+
+class equipmentForm(ModelForm):
+    class Meta:
+        model = Equipment
+        exclude = ['active']
+
+
+class experimentForm(ModelForm):
+    class Meta:
+        model = Experiment
+        exclude = ['active']
+    photos = MultipleFileField('Experiment Photos')
+    main_objective = TextAreaField(u'Main Objective', validators=[DataRequired(), Length(max=3000)])
+    project_id = qs(
+        query_factory=lambda: Project.query.filter_by(active=1).order_by(text("name asc")),
+        get_pk=lambda a: a.id,
+        get_label=lambda a: a.name,
+        allow_blank=False,
+        label='Project Name'
+    )
+    experimenter_id = QuerySelectField(
+        query_factory=lambda: Person.query.order_by(text("name asc")),
+        get_pk=lambda a: a.id,
+        get_label=lambda a: "{0} {1}, {2}".format(a.firstSurname, a.secondSurname, a.name),
+        allow_blank=False,
+        label='Experimenter Name',
+    )
+
+    witness_id = QuerySelectField(
+        query_factory=lambda: Person.query.order_by(text("name asc")),
+        get_pk=lambda a: a.id,
+        get_label=lambda a: "{0} {1}, {2}".format(a.firstSurname, a.secondSurname, a.name),
+        allow_blank=False,
+        label='Assistant Name',
+    )
