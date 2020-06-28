@@ -1,0 +1,22 @@
+{% import "/macros/experiment_macros.html" as exp_macros %}
+
+{% extends "/private/sample_form.html" %}
+{% block title %}Experiment{% endblock %}
+
+{% block formFields %}
+    {{ wtf.form_field(form.name) }}
+    {{ wtf.form_field(form.date) }}
+    {{ wtf.form_field(form.description) }}
+    {{ wtf.form_field(form.main_objective) }}
+    {{ wtf.form_field(form.project_id) }}
+    {{ wtf.form_field(form.experimenter_id) }}
+    {{ wtf.form_field(form.witness_id) }}
+    {{ exp_macros.render_methodology_list() }}
+    {{ wtf.form_field(form.photos) }}
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script src="https://raw.githack.com/SortableJS/Sortable/master/Sortable.js"></script>
+    <script src="/static/js/experiment_script.js"></script>
+{% endblock %}

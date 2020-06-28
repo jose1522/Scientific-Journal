@@ -322,6 +322,7 @@ def formCRUD(name):
                         formInstance[field.name].data = getattr(modelInstance, foreignKeyMappings[field.name])
                 logActivity(modelInstance,{'summary':'GET HTTP Call','description' :'GET Request with argument id: '+ idParameter},False)
             except Exception as e:
+                modelInstance = model()
                 logActivity(modelInstance, {'summary': str(e), 'description': '{0} request'.format(request.method)}, True)
                 abort(404)
         # else:
@@ -385,6 +386,17 @@ def formCRUD(name):
     resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm))
     return resp
 
+@admin.route("experiment", methods = ['GET', 'POST'])
+def experimentCRUD():
+    experimentForm = forms.experimentForm()
+    newForm = True
+    if request.method == 'GET':
+        pass
+    else:
+        f = request.form
+        pass
+    resp = make_response(render_template("private/experiment_form.html", form=experimentForm, newForm=newForm))
+    return resp
 
 @admin.errorhandler(404)
 def page_not_found(e):
