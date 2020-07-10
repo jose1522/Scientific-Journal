@@ -390,12 +390,19 @@ def formCRUD(name):
 def experimentCRUD():
     experimentForm = forms.experimentForm()
     newForm = True
+    equipment = [
+        {'value': '1', 'name': 'foo'},
+        {'value': '2', 'name': 'bar'},
+    ]
+
     if request.method == 'GET':
         pass
     else:
         f = request.form
         pass
-    resp = make_response(render_template("private/experiment_form.html", form=experimentForm, newForm=newForm))
+
+
+    resp = make_response(render_template("private/experiment_form.html", form=experimentForm, newForm=newForm, equipmentList=equipment))
     return resp
 
 @admin.errorhandler(404)

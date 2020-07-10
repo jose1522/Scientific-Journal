@@ -25,9 +25,23 @@ $(".form").on('click', '.addMethodologyBtn', function() {
 
 // Adds indexed name attributes to list items
 $( "form" ).submit(function( event ) {
+
+    let $select = $("#equipment_selectize").val().toString()
+    $("#equipment").val($select)
+
     $( ".methodology" ).each(function( index ) {
-        console.log(this)
-        console.log(index)
         $( this ).attr('name', 'methodology_'+index);
-      });
+    });
 });
+
+// Adding Selectize
+$('#equipment_selectize').selectize({
+    placeholder: 'Enter a value',
+    delimiter: ',',
+    create: false,
+    openOnFocus: true,
+    hideSelected: true,
+    valueField: 'value',
+    labelField: 'name'
+})
+

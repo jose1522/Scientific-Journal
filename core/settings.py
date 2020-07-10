@@ -1,5 +1,7 @@
 from os import environ
 import redis
+from dotenv import load_dotenv
+load_dotenv()
 
 SECRET_KEY = environ.get('SECRET_KEY')
 ENCRYPTION_KEY = environ.get('ENCRYPTION_KEY')
@@ -15,7 +17,7 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # Flask-Session
 SESSION_TYPE = environ.get('SESSION_TYPE')
-# SESSION_REDIS = redis.from_url('redis://127.0.0.1:6379')
+SESSION_REDIS = redis.from_url(environ.get('SESSION_REDIS'))
 
 # Image Uploads
 UPLOAD_FOLDER = environ.get('UPLOAD_FOLDER')

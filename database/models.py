@@ -1,14 +1,8 @@
 # coding: utf-8
 from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Index, Integer, LargeBinary, Table, Unicode, text
-# from sqlalchemy.dialects.mssql import Integer
 from sqlalchemy.orm import relationship
-from sqlalchemy_utils import EncryptedType
-from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
-import os
-from sqlalchemy.ext.declarative import declarative_base
 
 from . import db
-# Base = declarative_base()
 
 Base = db
 Model = Base.Model
