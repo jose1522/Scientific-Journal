@@ -200,7 +200,6 @@ t_experiment_equipment = Table(
     Column('active', Integer, index=True, server_default=text("((1))"))
 )
 
-
 class ExperimentImage(Model):
     __tablename__ = 'experiment_image'
     __table_args__ = (
@@ -208,7 +207,7 @@ class ExperimentImage(Model):
     )
 
     id = Column(Integer, primary_key=True)
-    photo = Column(LargeBinary)
+    photo = Column(Unicode(300))
     active = Column(Integer, server_default=text("((1))"))
     experiment_id = Column(ForeignKey('experiment.id'), nullable=False)
 
@@ -221,7 +220,7 @@ class Methodology(Model):
     )
 
     id = Column(Integer, primary_key=True)
-    step = Column(Unicode(50), nullable=False)
+    step = Column(Integer, nullable=False)
     description = Column(Unicode(1000), nullable=False)
     experiment_id = Column(ForeignKey('experiment.id'), nullable=False)
     active = Column(Integer, server_default=text("((1))"))

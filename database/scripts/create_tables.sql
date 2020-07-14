@@ -234,7 +234,8 @@ CREATE Table experiment(
     project_id int REFERENCES project(id) on delete cascade not null,
     experimenter_id int REFERENCES person(id) on delete no action,
     witness_id int REFERENCES person(id) on delete no action,
-    constraint ck_id_experiment check (id >= 0)
+    constraint ck_id_experiment check (id >= 0),
+    constraint unique_experiment UNIQUE(name, project_id)
 );
 GO
 
@@ -261,7 +262,7 @@ GO
 GO
 CREATE Table methodology(
     id int PRIMARY KEY,
-    step nvarchar(50) not null,
+    step int not null,
     description nvarchar(1000) not null,
     experiment_id int REFERENCES experiment(id) on delete cascade not null,
     active bit default 1,
@@ -1049,7 +1050,7 @@ AS
 BEGIN
     DECLARE @table nvarchar(50) = 'methodology';
     DECLARE @nextID int;
-    DECLARE @step nvarchar(50);
+    DECLARE @step int;
     DECLARE @description nvarchar(1000);
     DECLARE @experiment int;
     DECLARE @active bit;

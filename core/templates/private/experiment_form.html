@@ -15,22 +15,10 @@
     {{ wtf.form_field(form.project_id) }}
     {{ wtf.form_field(form.experimenter_id) }}
     {{ wtf.form_field(form.witness_id) }}
-    {{ exp_macros.render_methodology_list() }}
+    {{ exp_macros.render_methodology_list(methodologyList) }}
     {{ exp_macros.emptyInput('equipment') }}
-    {{ wtf.form_field(form.photos) }}
-
-
-    <div class="control-group">
-        <label for="equipment_selectize">Equipment</label>
-        <select id="equipment_selectize" multiple>
-            {% for item in equipmentList %}
-                {% set key, value = item.values() %}
-                <option value='{{key}}'> {{value}} </option>
-            {% endfor %}
-        </select>
-    </div>
-
-
+    {{ wtf.form_field(form.photos, accept="image/jpeg, image/jpg, image/x-png") }}
+    {{ exp_macros.render_equipment_list(equipmentList, equipmentSelection) }}
 {% endblock %}
 
 {% block scripts %}

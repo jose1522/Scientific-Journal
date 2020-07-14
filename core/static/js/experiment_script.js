@@ -26,12 +26,21 @@ $(".form").on('click', '.addMethodologyBtn', function() {
 // Adds indexed name attributes to list items
 $( "form" ).submit(function( event ) {
 
-    let $select = $("#equipment_selectize").val().toString()
-    $("#equipment").val($select)
+    try{
+        let $select = $("#equipment_selectize").val().toString()
+        $("#equipment").val($select)    
+    }catch{
+        console.log('No equipment entered')
+    }
 
-    $( ".methodology" ).each(function( index ) {
-        $( this ).attr('name', 'methodology_'+index);
-    });
+    try{
+        $( ".methodology" ).each(function( index ) {
+            $( this ).attr('name', 'methodology_'+index);
+        });
+    }catch{
+        console.log('No methodology entered')
+    }
+
 });
 
 // Adding Selectize
