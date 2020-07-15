@@ -9,12 +9,33 @@ import json
 import yaml
 import uuid
 from werkzeug.utils import  secure_filename
+from werkzeug.security import generate_password_hash
 from cryptography.fernet import Fernet
 from datetime import datetime
+from functools import wraps
+from flask_login import login_required, logout_user, current_user, login_user
+from . import login_manager
+
 
 from database.models import *
 admin = Blueprint('admin', '__name__')
 conf = yaml.full_load(open("database/formConfig.yml"))
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Check if user is logged-in on every page load."""
+    if user_id is not None:
+        payload = Person.query.get(user_id)
+        return payload
+    return None
+
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    """Redirect unauthorized users to Login page."""
+    flash('You must be logged in to view that page.')
+    return redirect(url_for('admin.login'))
 
 
 def allowed_file(filename):
@@ -58,8 +79,31 @@ def logActivity(modelInstance:Model, activityDescription:dict, isError:bool=Fals
 
 
 @admin.route('/')
+@login_required
+
 def index():
-    return "Hello World"
+    print(session)
+    return "Hello {0}".format(session.get('_user_id'))
+
+
+@admin.route('/login', methods=['GET', 'POST'])
+def login():
+    form = forms.LoginForm()
+    if form.validate_on_submit():
+        user = Person.query.filter_by(nickname=form.nickname.data).first()
+        if user and user.check_password(password=form.password.data):
+            login_user(user)
+            return redirect(url_for('admin.index'))
+        else:
+            flash('Invalid username/password combination', 'danger')
+            return redirect(url_for('admin.login'))
+    return render_template('private/login.html', form=form)
+
+@admin.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('admin.login'))
 
 @admin.route("/user", methods=['GET','POST'])
 def userCRUD():
@@ -143,7 +187,8 @@ def userCRUD():
                 if password is None or password == '':
                     raise Exception("Error! Password field cannot be empty")
                 else:
-                    password = encryptData(password).decode(encoding='UTF-8')
+                    # password = encryptData(password).decode(encoding='UTF-8')
+                    password = generate_password_hash(password, method='sha256')
 
                 # Creates lists for column names and values to be inserted in DML syntax
                 formFieldNames = [x for x in list(formInstance.data.keys()) if x not in ['csrf_token', 'password', 'isAdmin'] and x in req]

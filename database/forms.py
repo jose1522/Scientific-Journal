@@ -2,9 +2,9 @@ from .models import *
 from database import db
 from wtforms_alchemy import model_form_factory, QuerySelectField, ModelFieldList, ModelFormField
 from flask_wtf import FlaskForm, file
-from wtforms import StringField,IntegerField,BooleanField,FileField,PasswordField, SelectField, TextAreaField, MultipleFileField
+from wtforms import StringField,IntegerField,BooleanField,FileField,PasswordField, SelectField, TextAreaField, MultipleFileField, SubmitField
 from wtforms.ext.sqlalchemy.fields import QuerySelectField as qs
-from wtforms.validators import DataRequired, Length
+from wtforms.validators import DataRequired, Length, Email, EqualTo, Length, Optional
 from wtforms.fields import FormField
 
 BaseModelForm = model_form_factory(FlaskForm)
@@ -150,3 +150,9 @@ class experimentForm(ModelForm):
         allow_blank=False,
         label='Assistant Name',
     )
+
+
+class LoginForm(FlaskForm):
+    nickname = StringField('User name', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Log In')

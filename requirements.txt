@@ -9,6 +9,7 @@ flask-wtf
 flask-uploads
 wtforms_alchemy
 flask-session
+flask-login
 flask_sqlalchemy
 flask_bootstrap
 redis

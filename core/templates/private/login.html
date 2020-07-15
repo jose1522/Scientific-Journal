@@ -1,0 +1,32 @@
+{% import "bootstrap/wtf.html" as wtf %}
+{% extends "bootstrap/base.html" %}
+
+{% block content %}
+<div class="container">
+
+    <div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                  {% if category == 'message' %}
+                    <div class="alert alert-success" role="alert">
+                  {% else %}
+                    <div class="alert alert-{{ category }}" role="alert">
+                  {% endif %}
+                    {{ message }}
+                  </div>
+              {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <form class="form" method="post" role="form"  enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        {{ wtf.form_errors(form, hiddens="only") }}
+
+        {{ wtf.form_field(form.nickname) }}
+        {{ wtf.form_field(form.password) }}
+        {{ wtf.form_field(form.submit) }}
+    </form>
+</div>
+{% endblock %}
