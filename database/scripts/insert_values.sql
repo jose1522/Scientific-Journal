@@ -105,9 +105,9 @@ GO
 -- Populate Person Table --
 GO
 insert into person (nickname, password, isAdmin, name,  firstSurname, secondSurname, phone, degree_id, job_id) values
-    ('chris','123', 1, 'Christian', 'Hardin', 'Rodriguez', 22222222, 4, 0)
-    ,('dean','123', 1, 'Dean', 'Fernandez', 'Bryant', 22222223, 4, 1)
-    ,('jose','123', 0, 'Jose', 'Moya', 'Porras', 22222224, 4, 2)
+    ('chris','sha256$l4ap9fEB$469b90f4fe4a3d84387bef042b396d7bcb9a1299e3492ce26b9dc6f27cb85f55', 1, 'Christian', 'Hardin', 'Rodriguez', 22222222, 4, 0)
+    ,('dean','sha256$l4ap9fEB$469b90f4fe4a3d84387bef042b396d7bcb9a1299e3492ce26b9dc6f27cb85f55', 1, 'Dean', 'Fernandez', 'Bryant', 22222223, 4, 1)
+    ,('jose','sha256$l4ap9fEB$469b90f4fe4a3d84387bef042b396d7bcb9a1299e3492ce26b9dc6f27cb85f55', 0, 'Jose', 'Moya', 'Porras', 22222224, 4, 2)
 GO
 
 -- Populate Project Table --

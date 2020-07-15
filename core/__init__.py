@@ -7,6 +7,7 @@ from flask_session import Session
 from admin.routes import admin
 from api.routes import api
 from database import db
+from admin import login_manager
 # from database.database import db
 from public.routes import public
 from werkzeug.utils import secure_filename
@@ -23,12 +24,11 @@ app.register_blueprint(admin, url_prefix='/admin')
 # Instantiate session
 sess = Session()
 sess.init_app(app)
+login_manager.init_app(app)
 
 # Instantiate SQLAlchemy
 db.init_app(app)
 
 # Instantiate Flask Bootstrap
 Bootstrap(app)
-
-# from core import views
 

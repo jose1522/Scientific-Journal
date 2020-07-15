@@ -1,6 +1,8 @@
 # coding: utf-8
 from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Index, Integer, LargeBinary, Table, Unicode, text
 from sqlalchemy.orm import relationship
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from . import db
 
@@ -101,7 +103,7 @@ class Job(Model):
         return str([{'id',self.id},{'name': self.name}])
 
 
-class Person(Model):
+class Person(UserMixin, Model):
     __tablename__ = 'person'
     __table_args__ = (
         Index('unique_fullname_person', 'name', 'firstSurname', 'secondSurname', unique=True),
@@ -124,6 +126,19 @@ class Person(Model):
     degree = relationship('Degree')
     job = relationship('Job')
 
+    def set_password(self, password):
+        """Create hashed password."""
+        self.password = generate_password_hash(
+            password,
+            method='sha256'
+        )
+
+    def check_password(self, password):
+        """Check hashed password."""
+        return check_password_hash(self.password, password)
+
+    def __repr__(self):
+        return '<User {}>'.format(self.username)
 
 class ActivityLog(Model):
     __tablename__ = 'activity_log'
@@ -200,7 +215,6 @@ t_experiment_equipment = Table(
     Column('active', Integer, index=True, server_default=text("((1))"))
 )
 
-
 class ExperimentImage(Model):
     __tablename__ = 'experiment_image'
     __table_args__ = (
@@ -208,7 +222,7 @@ class ExperimentImage(Model):
     )
 
     id = Column(Integer, primary_key=True)
-    photo = Column(LargeBinary)
+    photo = Column(Unicode(300))
     active = Column(Integer, server_default=text("((1))"))
     experiment_id = Column(ForeignKey('experiment.id'), nullable=False)
 
@@ -221,7 +235,7 @@ class Methodology(Model):
     )
 
     id = Column(Integer, primary_key=True)
-    step = Column(Unicode(50), nullable=False)
+    step = Column(Integer, nullable=False)
     description = Column(Unicode(1000), nullable=False)
     experiment_id = Column(ForeignKey('experiment.id'), nullable=False)
     active = Column(Integer, server_default=text("((1))"))
