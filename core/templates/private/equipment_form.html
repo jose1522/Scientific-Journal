@@ -1,0 +1,8 @@
+{% extends "/private/sample_form.html" %}
+
+{% block formFields %}
+    {{ wtf.form_field(form.name) }}
+    {{ wtf.form_field(form.brand) }}
+    {{ wtf.form_field(form.model) }}
+    {{ wtf.form_field(form.serial) }}
+{% endblock %}

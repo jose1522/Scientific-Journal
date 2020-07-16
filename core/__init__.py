@@ -1,10 +1,16 @@
-from flask import Flask
 import datetime
-from flask_session import Session
-from public.routes import public
-from api.routes import api
-from admin.routes import admin
 
+from flask import Flask
+from flask_bootstrap import Bootstrap
+from flask_session import Session
+
+from admin.routes import admin
+from api.routes import api
+from database import db
+from admin import login_manager
+# from database.database import db
+from public.routes import public
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config.from_pyfile('settings.py')
@@ -18,6 +24,11 @@ app.register_blueprint(admin, url_prefix='/admin')
 # Instantiate session
 sess = Session()
 sess.init_app(app)
+login_manager.init_app(app)
 
-# from core import views
+# Instantiate SQLAlchemy
+db.init_app(app)
+
+# Instantiate Flask Bootstrap
+Bootstrap(app)
 

@@ -1,0 +1,65 @@
+{% import "bootstrap/wtf.html" as wtf %}
+{% extends "bootstrap/base.html" %}
+{% block title %}Consecutive{% endblock %}
+
+{%- block styles %}
+<!-- Bootstrap -->
+<link href="{{bootstrap_find_resource('css/bootstrap.css', cdn='bootstrap')}}" rel="stylesheet">
+<link href="/static/css/404.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Righteous&display=swap" rel="stylesheet">
+{%- endblock styles %}
+
+{% block content %}
+    <div class="moon"></div>
+    <div class="moon__crater moon__crater1"></div>
+    <div class="moon__crater moon__crater2"></div>
+    <div class="moon__crater moon__crater3"></div>
+
+    <div class="star star1"></div>
+    <div class="star star2"></div>
+    <div class="star star3"></div>
+    <div class="star star4"></div>
+    <div class="star star5"></div>
+
+    <div class="error">
+      <div class="error__title">404</div>
+      <div class="error__subtitle">Oops...</div>
+      <div class="error__description">Looks like you're out of luck</div>
+      <button class="error__button error__button--active" onclick="location.href='{{url_for('public.index')}}'">Go Home</button>
+      <button class="error__button" onclick="javascript:history.back()">Go Back</button>
+    </div>
+
+    <div class="astronaut">
+      <div class="astronaut__backpack"></div>
+      <div class="astronaut__body"></div>
+      <div class="astronaut__body__chest"></div>
+      <div class="astronaut__arm-left1"></div>
+      <div class="astronaut__arm-left2"></div>
+      <div class="astronaut__arm-right1"></div>
+      <div class="astronaut__arm-right2"></div>
+      <div class="astronaut__arm-thumb-left"></div>
+      <div class="astronaut__arm-thumb-right"></div>
+      <div class="astronaut__leg-left"></div>
+      <div class="astronaut__leg-right"></div>
+      <div class="astronaut__foot-left"></div>
+      <div class="astronaut__foot-right"></div>
+      <div class="astronaut__wrist-left"></div>
+      <div class="astronaut__wrist-right"></div>
+
+      <div class="astronaut__cord">
+        <canvas id="cord" height="500px" width="500px"></canvas>
+      </div>
+
+      <div class="astronaut__head">
+        <canvas id="visor" width="60px" height="60px"></canvas>
+        <div class="astronaut__head-visor-flare1"></div>
+        <div class="astronaut__head-visor-flare2"></div>
+      </div>
+    </div>
+
+    {% block scripts %}
+    <script src="{{bootstrap_find_resource('jquery.js', cdn='jquery')}}"></script>
+    <script src="{{bootstrap_find_resource('js/bootstrap.js', cdn='bootstrap')}}"></script>
+    <script src="/static/js/404.js"></script>
+    {%- endblock scripts %}
+{% endblock %}

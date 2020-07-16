@@ -17,6 +17,7 @@ def login_required(f):
 @public.route("/")
 def index():
     session['user'] = 'Test'
+    session['id'] = 0
     res = make_response("Hello World")
     res.set_cookie("genericCookie", json.dumps({"key1":"value1","key2":"value2"}))
     return res
