@@ -1,4 +1,5 @@
 consecutive:
+  description: "Consecutive"
   modelName: "Consecutive"
   formName: "consecutiveForm"
   htmlName: "consecutive_form.html"
@@ -7,6 +8,7 @@ consecutive:
     - 'type_id': 'type'
 
 job:
+  description: "Job"
   modelName: "Job"
   formName: "jobForm"
   htmlName: "job_form.html"
@@ -14,26 +16,31 @@ job:
     - 'user_role_id': 'user_role'
 
 user-role:
+  description: "User Role"
   modelName: "UserRole"
   formName: "userRoleForm"
   htmlName: "user_role_form.html"
 
 degree:
+  description: "Degree"
   modelName: "Degree"
   formName: "degreeForm"
   htmlName: "degree_form.html"
 
 code:
+  description: "Code"
   modelName: "Code"
   formName: "codeForm"
   htmlName: "code_form.html"
 
 branch:
+  description: "Branch"
   modelName: "Branch"
   formName: "branchForm"
   htmlName: "branch_form.html"
 
 project:
+  description: "Project"
   modelName: "Project"
   formName: "projectForm"
   htmlName: "project_form.html"
@@ -42,6 +49,7 @@ project:
     - 'branch_id': 'branch'
 
 equipment:
+  description: "Equipment"
   modelName: "Equipment"
   formName: "equipmentForm"
   htmlName: "equipment_form.html"

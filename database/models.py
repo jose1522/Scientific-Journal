@@ -137,8 +137,6 @@ class Person(UserMixin, Model):
         """Check hashed password."""
         return check_password_hash(self.password, password)
 
-    def __repr__(self):
-        return '<User {}>'.format(self.username)
 
 class ActivityLog(Model):
     __tablename__ = 'activity_log'

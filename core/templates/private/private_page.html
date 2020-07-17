@@ -2,90 +2,68 @@
 {% extends "bootstrap/base.html" %}
 
 {% block styles %}
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+    integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.0.0/animate.min.css" />
+<link rel="stylesheet" href="/static/css/private_page.css" />
 <!-- <link rel="stylesheet" type="text/css" href="/static/css/menu.css"/> -->
-<link
-rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.0.0/animate.min.css"/>
-<style>
-    .container{
-        margin-top: 10px;
-        
-        
-    }
-    .row{
-        background-color:white;
-        border-radius: 10px;
-        margin-top: 30px;
-        margin-bottom: 30px;
-        
-
-
-    }
-    .nav-link{
-       color: white;
-    }
-    .nav-link:hover{
-        color: #00b4d8;
-    }
-    body{
-    background: #2980b9;  /* fallback for old browsers */
-background: -webkit-linear-gradient(to right, #2c3e50, #2980b9);  /* Chrome 10-25, Safari 5.1-6 */
-background: linear-gradient(to right, #2c3e50, #2980b9); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-  }
-
-  .letra{
-       color: black ;
-   }
-</style>
-
 {% endblock%}
 
 
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
+{% endblock %}
+
 {% block navbar %}
 <div class="container">
-    <div class=" row">
-        <nav class="navbar navbar-expand-lg navbar-dark black">
-         <ul class="nav nav-pills">
-            <li class="nav-item">
-              <a class=" letra nav-link" href="http://127.0.0.1:5000/admin/login">Login</a>
-            </li>
-            <li class=" letra nav-item">
-              <a class=" letra nav-link" href="http://127.0.0.1:5000/admin/form/consecutive">consecutive</a>
-            </li>
-            <li class=" nav-item">
-              <a class="letra nav-link" href="http://127.0.0.1:5000/admin/form/code">Code</a>
-            </li>
-            <li class="nav-item">
-                <a class=" letra nav-link" href="http://127.0.0.1:5000/admin/form/degree">Degree</a>
-            </li>
-            <li class="nav-item">
-                <a class="letra nav-link" href="http://127.0.0.1:5000/admin/form/equipment">Equipment</a>
-            </li>
-            <li class="nav-item">
-                <a class="letra nav-link" href="http://127.0.0.1:5000/admin/experiment">Experiment</a>
-            </li>
-            <li class="nav-item">
-                <a class="letra nav-link" href="http://127.0.0.1:5000/admin/form/job">Job</a>
-            </li>
-            <li class="nav-item">
-                <a class=" letra nav-link" href="http://127.0.0.1:5000/admin/form/project">Project</a>
-            </li>
-            <li class="nav-item">
-                <a class="letra nav-link" href="http://127.0.0.1:5000/admin/form/branch">Branch</a>
-            </li>
-            <li class="nav-item">
-                <a class="letra nav-link" href="http://127.0.0.1:5000/admin/logout">Logout</a>
-            </li>
-
-        </ul> 
+    <div class="row">
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <a class="navbar-brand" href="{{url_for('admin.index')}}">Home</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
+                aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                            Add new
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                            <a class="dropdown-item" href="{{url_for('admin.userCRUD')}}">User</a>
+                            <a class="dropdown-item" href="{{url_for('admin.experimentCRUD')}}">Experiment</a>
+                            {% for link in links%}
+                            {% set key, value = link %}
+                            <a class="dropdown-item" href="{{url_for('admin.formCRUD', name=value)}}">{{key}}</a>
+                            {% endfor %}
+                        </div>
+                    </li>
+                </ul>
+                <div class="nav-item">
+                    <a class="btn btn-dark" href="{{url_for('admin.logout')}}">Logout</a>
+                </div>
+            </div>
         </nav>
     </div>
 </div>
-
- 
 {%- endblock navbar %}
 
 
 {% block content %}
-
+<div class="jumbotron jumbotron-fluid">
+    <div class="container">
+        <h1 class="display-4">Welcome {{firstName}}!</h1>
+        <hr class="my-4">
+        <p class="lead">You are now in the admin dashboard</p>
+    </div>
+</div>
 {% endblock %}
