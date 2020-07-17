@@ -302,7 +302,7 @@ def userCRUD():
             logActivity(modelInstance, {'summary': 'No id was provided', 'description': '{0} request ({1})'.format(request.method, buttonClicked)}, True)
             db.session.commit()
 
-    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm, links=links))
+    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm, links=links, views=views))
     return resp
 
 
@@ -443,7 +443,7 @@ def formCRUD(name):
             logActivity(modelInstance, {'summary': "User did not provide an ID parameter", 'description': 'POST Request'}, True)
             flash('No id was provided',category='danger')
 
-    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm, links=links))
+    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm, links=links, views=views))
     return resp
 
 
@@ -755,7 +755,7 @@ def experimentCRUD():
                     flashErrors(str(e))
                     newForm = False
 
-    resp = make_response(render_template("private/experiment_form.html", form=experimentForm, newForm=newForm, equipmentList=equipment, methodologyList=methodology, equipmentSelection=equipmentSelection, links=links))
+    resp = make_response(render_template("private/experiment_form.html", form=experimentForm, newForm=newForm, equipmentList=equipment, methodologyList=methodology, equipmentSelection=equipmentSelection, links=links, views=views))
     return resp
 
 

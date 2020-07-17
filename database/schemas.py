@@ -84,7 +84,7 @@ class RoleSchema(Schema):
     class Meta:
         ordered = True
 
-    link = ma.Hyperlinks(ma.URLFor("admin.formCRUD", id="<id>", name="role"))
+    link = ma.Hyperlinks(ma.URLFor("admin.formCRUD", id="<id>", name="user-role"))
     code = fields.Str(data_key='Code')
     name = fields.Str(data_key='Name')
     description = fields.Str(data_key='Description')
@@ -127,7 +127,7 @@ class ExperimentSchema(Schema):
     class Meta:
         ordered = True
 
-    link = ma.Hyperlinks(ma.URLFor("admin.formCRUD", id="<id>", name="experiment"))
+    link = ma.Hyperlinks(ma.URLFor("admin.experimentCRUD", id="<id>"))
     code = fields.Str(data_key='Code')
     name = fields.Str(data_key='Name')
     project = fields.Str(data_key='Project')
