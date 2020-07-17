@@ -4,6 +4,9 @@ passlib
 python-dotenv
 requests
 sqlalchemy
+marshmallow
+marshmallow-sqlalchemy
+flask-marshmallow
 sqlacodegen
 flask-wtf
 flask-uploads

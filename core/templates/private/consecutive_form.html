@@ -1,5 +1,10 @@
 {% extends "/private/sample_form.html" %}
 
+{% block card_title %}
+    Consecutive
+{% endblock %}
+
+
 {% block formFields %}
     {{ wtf.form_field(form.table_name_id) }}
     {{ wtf.form_field(form.type_id) }}

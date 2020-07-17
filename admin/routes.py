@@ -1,5 +1,5 @@
 from flask import Blueprint, session, render_template, request, abort, redirect, url_for, flash, make_response
-from database import forms, models
+from database import forms, models, schemas
 from core import *
 import core
 from core.util import dictTools
@@ -18,15 +18,19 @@ from . import login_manager
 
 
 from database.models import *
+
 admin = Blueprint('admin', '__name__')
-conf = yaml.full_load(open("database/formConfig.yml"))
+formConf = yaml.full_load(open("database/formConfig.yml"))
+viewConf = yaml.full_load(open("database/viewConfig.yml"))
+links = list(map(lambda x: (formConf.get(x).get('description'), x), formConf))
+views = list(map(lambda x: (viewConf.get(x).get('description'), x, viewConf.get(x).get('accessLevel')), viewConf))
 
 
 @login_manager.user_loader
 def load_user(user_id):
     """Check if user is logged-in on every page load."""
     if user_id is not None:
-        payload = Person.query.get(user_id)
+        payload = Person.query.filter((Person.active == 1) & (Person.id == user_id)).first()
         return payload
     return None
 
@@ -80,10 +84,10 @@ def logActivity(modelInstance:Model, activityDescription:dict, isError:bool=Fals
 
 @admin.route('/')
 @login_required
-
 def index():
-    print(session)
-    return "Hello {0}".format(session.get('_user_id'))
+    # print(session)
+    user = Person.query.get(session.get('_user_id'))
+    return render_template('private/private_page.html', firstName=user.name, links=links, views=views)
 
 
 @admin.route('/login', methods=['GET', 'POST'])
@@ -99,13 +103,16 @@ def login():
             return redirect(url_for('admin.login'))
     return render_template('private/login.html', form=form)
 
+
 @admin.route("/logout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('admin.login'))
 
+
 @admin.route("/user", methods=['GET','POST'])
+@login_required
 def userCRUD():
     model = Person
     tableName = model.__tablename__
@@ -120,7 +127,7 @@ def userCRUD():
     req = request.form
 
     def redirectToDefaultRoute():
-        return redirect(url_for('admin.userCRUD'))
+        return redirect(url_for('admin.index'))
 
     def populateDataModel(modelInstance):
         # Updates the form instance with values from the website
@@ -295,15 +302,16 @@ def userCRUD():
             logActivity(modelInstance, {'summary': 'No id was provided', 'description': '{0} request ({1})'.format(request.method, buttonClicked)}, True)
             db.session.commit()
 
-    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm))
+    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm, links=links, views=views))
     return resp
 
 
 @admin.route("/form/<name>", methods = ['GET','POST'])
+@login_required
 def formCRUD(name):
 
     try:
-        objectSpecificConfig = conf[name.lower()]
+        objectSpecificConfig = formConf[name.lower()]
     except:
         abort(404)
 
@@ -321,7 +329,7 @@ def formCRUD(name):
     formInstance = formTemplate() # instantiate the class
 
     def redirectToDefaultRoute():
-        return redirect(url_for('admin.formCRUD', name=name))
+        return redirect(url_for('admin.index'))
 
     def populateDataModel(modelInstance):
         for item in formInstance.data:
@@ -435,11 +443,12 @@ def formCRUD(name):
             logActivity(modelInstance, {'summary': "User did not provide an ID parameter", 'description': 'POST Request'}, True)
             flash('No id was provided',category='danger')
 
-    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm))
+    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm, links=links, views=views))
     return resp
 
 
-@admin.route("experiment", methods = ['GET', 'POST'])
+@admin.route("experiment", methods=['GET', 'POST'])
+@login_required
 def experimentCRUD():
 
     def getEquipmentArray(id=None):
@@ -507,7 +516,7 @@ def experimentCRUD():
         equipment = getEquipmentArray()
         methodology = None
         equipmentSelection = None
-        return redirect(url_for('admin.experimentCRUD', form=experimentForm, newForm=newForm, equipmentList=equipment, methodologyList=methodology, equipmentSelection=equipmentSelection))
+        return redirect(url_for('admin.index'))
 
     def flashErrors(errMessage=None, formInstance=None):
         db.session.rollback()
@@ -686,7 +695,7 @@ def experimentCRUD():
                                     logActivity(ExperimentImage, {'summary': '', 'description': '{0} request for ID {1} (Remove)'.format(request.method, item)})
 
                         db.session.commit()
-                        return redirect(url_for('admin.experimentCRUD', id=idValue))
+                        return redirect(url_for('admin.experimentCRUD', id=idValue, links=links))
 
                     else:
                         db.session.rollback()
@@ -746,11 +755,29 @@ def experimentCRUD():
                     flashErrors(str(e))
                     newForm = False
 
-    resp = make_response(render_template("private/experiment_form.html", form=experimentForm, newForm=newForm, equipmentList=equipment, methodologyList=methodology, equipmentSelection=equipmentSelection))
+    resp = make_response(render_template("private/experiment_form.html", form=experimentForm, newForm=newForm, equipmentList=equipment, methodologyList=methodology, equipmentSelection=equipmentSelection, links=links, views=views))
     return resp
 
+
+@admin.route("table/<name>")
+@login_required
+def query_results(name):
+    try:
+        objectSpecificConfig = viewConf[name.lower()]
+        view = getattr(models, objectSpecificConfig['viewName'])
+        model = db.session.query(view).all()
+        modelSchema = getattr(schemas, objectSpecificConfig['schema'])
+        modelSchema = modelSchema(many=True)
+        items = modelSchema.dump(model)
+        v = views
+        return render_template('private/query_results.html', query_results=model, items=items, links=links, views=views)
+    except Exception as e:
+        print(str(e))
+        abort(404)
 
 @admin.errorhandler(404)
 def page_not_found(e):
     # note that we set the 404 status explicitly
     return render_template('errors/404.html'), 404
+
+

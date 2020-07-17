@@ -1,5 +1,11 @@
+
+
 {% extends "/private/sample_form.html" %}
 
+
+{% block card_title %}
+      User
+{% endblock %}
 {% block formFields %}
     {{ wtf.form_field(form.nickname) }}
     {{ wtf.form_field(form.password) }}
