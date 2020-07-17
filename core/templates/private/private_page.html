@@ -13,10 +13,13 @@ rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.0.0/
         
     }
     .row{
-        background-color: #6c757d;
+        background-color:white;
         border-radius: 10px;
         margin-top: 30px;
         margin-bottom: 30px;
+        
+
+
     }
     .nav-link{
        color: white;
@@ -28,8 +31,11 @@ rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.0.0/
     background: #2980b9;  /* fallback for old browsers */
 background: -webkit-linear-gradient(to right, #2c3e50, #2980b9);  /* Chrome 10-25, Safari 5.1-6 */
 background: linear-gradient(to right, #2c3e50, #2980b9); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-
   }
+
+  .letra{
+       color: black ;
+   }
 </style>
 
 {% endblock%}
@@ -41,32 +47,36 @@ background: linear-gradient(to right, #2c3e50, #2980b9); /* W3C, IE 10+/ Edge, F
         <nav class="navbar navbar-expand-lg navbar-dark black">
          <ul class="nav nav-pills">
             <li class="nav-item">
-              <a class="nav-link" href="http://127.0.0.1:5000/admin/login">Login</a>
+              <a class=" letra nav-link" href="http://127.0.0.1:5000/admin/login">Login</a>
+            </li>
+            <li class=" letra nav-item">
+              <a class=" letra nav-link" href="http://127.0.0.1:5000/admin/form/consecutive">consecutive</a>
+            </li>
+            <li class=" nav-item">
+              <a class="letra nav-link" href="http://127.0.0.1:5000/admin/form/code">Code</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="http://127.0.0.1:5000/admin/form/consecutive">consecutive</a>
+                <a class=" letra nav-link" href="http://127.0.0.1:5000/admin/form/degree">Degree</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="http://127.0.0.1:5000/admin/form/code">Code</a>
+                <a class="letra nav-link" href="http://127.0.0.1:5000/admin/form/equipment">Equipment</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="http://127.0.0.1:5000/admin/form/degree">Degree</a>
+                <a class="letra nav-link" href="http://127.0.0.1:5000/admin/experiment">Experiment</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="http://127.0.0.1:5000/admin/form/equipment">Equipment</a>
+                <a class="letra nav-link" href="http://127.0.0.1:5000/admin/form/job">Job</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="http://127.0.0.1:5000/admin/experiment">Experiment</a>
+                <a class=" letra nav-link" href="http://127.0.0.1:5000/admin/form/project">Project</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="http://127.0.0.1:5000/admin/form/job">Job</a>
+                <a class="letra nav-link" href="http://127.0.0.1:5000/admin/form/branch">Branch</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="http://127.0.0.1:5000/admin/form/project">Project</a>
+                <a class="letra nav-link" href="http://127.0.0.1:5000/admin/logout">Logout</a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="http://127.0.0.1:5000/admin/form/branch">Branch</a>
-            </li>
+
         </ul> 
         </nav>
     </div>
