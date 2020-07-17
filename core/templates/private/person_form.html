@@ -1,5 +1,45 @@
 {% extends "/private/sample_form.html" %}
+<!--  -->
+{% import "bootstrap/wtf.html" as wtf %}
 
+
+{% block styles %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+<link rel="stylesheet" type="text/css" href="/static/css/Login.css"/>
+{% endblock%}
+
+{% block navbar %}
+<div class="container">
+    <br>
+    <br>
+    <div class="row">
+
+    <ul class="nav nav-pills">
+        <li class="nav-item">
+          <a class="nav-link active" href="http://127.0.0.1:5000/admin/login">Login</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link disabled" href="#">Disabled</a>
+        </li>
+      </ul>
+    </div>
+    <br>
+    <br>
+</div>
+
+ 
+{%- endblock navbar %}
+{% block card_title %}
+<div class="card-header text-white bg-primary">
+      User
+</div>
+{% endblock %}
 {% block formFields %}
     {{ wtf.form_field(form.nickname) }}
     {{ wtf.form_field(form.password) }}

@@ -1,11 +1,19 @@
 {% import "bootstrap/wtf.html" as wtf %}
-{% extends "bootstrap/base.html" %}
+{% extends "private/private_page.html" %}
 
-
+{% block styles %}
+<!-- si no se pone super se sobre escribe -->
+{{super()}} 
+<link rel="stylesheet" type="text/css" href="/static/css/selectize.css"/>   
+{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class=" card container">
+{% block card_title %}
 
+{% endblock %}
+
+<div class="card-body">
     <div>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -37,5 +45,6 @@
         <button type="delete" class="btn btn-danger" name="form_button" value="delete">Delete</button>
         {% endif %}
     </form>
+  </div>
 </div>
 {% endblock %}

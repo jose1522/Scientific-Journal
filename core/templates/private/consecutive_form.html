@@ -1,4 +1,10 @@
 {% extends "/private/sample_form.html" %}
+{% block card_title %}
+<div class="card-header text-white bg-primary">
+    Consecutive
+</div>
+{% endblock %}
+
 
 {% block formFields %}
     {{ wtf.form_field(form.table_name_id) }}
