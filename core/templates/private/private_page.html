@@ -19,6 +19,7 @@
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
     integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
     crossorigin="anonymous"></script>
+<script src="/static/js/translator.js"></script>
 {% endblock %}
 
 {% block navbar %}
@@ -63,6 +64,22 @@
                             View/Edit
                         </a>
                         <div class="dropdown-menu" aria-labelledby="tableDropdown">
+                            {% for view in views%}
+                            {% set key, value, level = view %}
+                            <a class="dropdown-item" href="{{url_for('admin.query_results', name=value)}}">{{key}}</a>
+                            {% endfor %}
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div class="collapse navbar-collapse" id="languageOptions">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" data-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                            Change Language
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="languageDropdown">
                             {% for view in views%}
                             {% set key, value, level = view %}
                             <a class="dropdown-item" href="{{url_for('admin.query_results', name=value)}}">{{key}}</a>
