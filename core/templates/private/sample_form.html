@@ -4,8 +4,17 @@
 {% block styles %}
 <!-- si no se pone super se sobre escribe -->
 {{super()}} 
-<link rel="stylesheet" type="text/css" href="/static/css/selectize.css"/>   
+<link rel="stylesheet" type="text/css" href="/static/css/selectize.css"/>  
+<style>
+.card{
+  margin: 200px 200 ;
+  padding: 0px;
+  
+}
+
+</style>
 {% endblock %}
+
 
 {% block content %}
 <div class=" card container">
@@ -13,7 +22,8 @@
 
 {% endblock %}
 
-<div class="card-body">
+<div class="card-body col-lg-12 col-md-4 col-sm-6 col-xs-12">
+
     <div>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -47,4 +57,5 @@
     </form>
   </div>
 </div>
+
 {% endblock %}
