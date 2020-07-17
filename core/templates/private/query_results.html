@@ -10,7 +10,11 @@
                     <tr>
                         {% for cell in items[0].keys() %}
                         <th>
-                            {{cell}}
+                            {%if 'link' in cell%}
+                                Edit/Delete
+                            {%else%}
+                                {{cell}}
+                            {%endif%}
                         </th>
                         {%endfor%}
                     </tr>
@@ -21,7 +25,7 @@
                         {% set key, value = cell%}
                         <td>
                             {%if 'link' in key%}
-                                <a class="btn btn-primary" href="{{value}}">Edit</a>
+                                <a class="btn btn-primary" href="{{value}}">Go</a>
                             {%else%}
                                 {{value}}
                             {%endif%}

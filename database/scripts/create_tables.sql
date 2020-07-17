@@ -475,6 +475,7 @@ CREATE VIEW view_error_log(
     code,
     person,
     date_time,
+    table_name,
     description,
     summary
 ) AS 
@@ -483,11 +484,12 @@ SELECT
     concat(coalesce(c.prefix, ''),e.id + COALESCE(c.value,0)),
     p.nickname,
     e.date_time,
+    t.name,
     e.description,
     e.summary
 FROM 
     error_log e
-    left join person p on e.person_id = p.name
+    left join person p on e.person_id = p.id
     left join table_ref t on t.name = e.table_name_id
     left join consecutive c on t.name = c.table_name_id
 GO
@@ -497,6 +499,7 @@ GO
 CREATE VIEW view_activity_log(
     id,
     code,
+    table_name,
     person,
     date_time,
     description
@@ -504,12 +507,13 @@ CREATE VIEW view_activity_log(
 SELECT
     a.id,
     concat(coalesce(c.prefix, ''),a.id + COALESCE(c.value,0)),
+    t.name,
     p.nickname,
     a.date_time,
     a.[description]
 FROM 
     activity_log a
-    left join person p on a.person_id = p.name
+    left join person p on a.person_id = p.id
     left join table_ref t on t.name = a.table_name_id
     left join consecutive c on t.name = c.table_name_id
 GO
@@ -650,7 +654,46 @@ FROM
     left join job j on j.id = p.job_id
     left join table_ref t on t.name = 'person'
     left join consecutive c on t.name = c.table_name_id
+WHERE
+    p.active = 1
 GO
+
+-- Code View --
+GO
+CREATE VIEW view_code(
+    id,
+    description
+) AS 
+SELECT
+    c.id,
+    c.description
+FROM 
+    code c
+ORDER BY
+    c.id ASC
+GO
+
+
+-- Consecutive View --
+GO
+CREATE VIEW view_consecutive(
+    id,
+    type,
+    description,
+    value,
+    prefix
+) AS 
+SELECT
+    c.id,
+    c2.description,
+    c.description,
+    c.value,
+    c.prefix
+FROM 
+    consecutive c
+    left join code c2 on c.type_id = c2.id
+GO
+
 
 -- Function to return max value
 
