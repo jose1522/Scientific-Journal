@@ -107,7 +107,8 @@ def hasClearance(f):
 def index():
     # print(session)
     clearance = getUserClearance()
-    return render_template('private/private_page.html', firstName=current_user.name, links=links, views=views, userClearance=clearance)
+    res = make_response(render_template('private/private_page.html', firstName=current_user.name, links=links, views=views, userClearance=clearance))
+    return res
 
 
 @admin.route('/login', methods=['GET', 'POST'])

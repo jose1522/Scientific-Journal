@@ -25,17 +25,13 @@ function getTranslation(element, sourceText, targetLanguage) {
 function getInnerHTML(tagName){
     return new Promise( (resolve) => {
         $(tagName).each( function(index){
-            getTranslation(this, 'a', 'de')
+            lang = document.cookie.split('=')[1]
+            getTranslation(this, 'a', lang)
         })
     })
 }
 
-async function process(arrayOfPromises) {
-    let responses = await Promise.all(arrayOfPromises);
-}
-
-$( document ).ready(async function() {
-    // cargar animación de loading
+async function translateDoc(){
     let arrayofPromises = [
         getInnerHTML('a'),
         getInnerHTML('p'),
@@ -44,6 +40,39 @@ $( document ).ready(async function() {
         getInnerHTML('th'),
         getInnerHTML('#card-header')
     ]
-    await process(arrayOfPromises);
+    await process(arrayofPromises);
     //quitar animación de loading
+}
+
+async function process(arrayofPromises) {
+    let responses = await Promise.all(arrayofPromises);
+}
+
+function deleteAllCookies() {
+    var cookies = document.cookie.replace(" ","").split(";");
+    console.log(cookies)
+    for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i];
+        var eqPos = cookie.indexOf("=");
+        var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+        console.log(name)
+        document.cookie = name + "= ;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    }
+}
+
+function setLanguageCookie(language){
+    deleteAllCookies()
+    setTimeout(function(){
+        document.cookie = "lang="+language+";path=/admin"
+        location.reload()
+    }, 1);
+
+}
+
+$(document).ready(async function() {
+    // cargar animación de loading
+    console.log(document.cookie)
+    if ( !['lang=en',null,NaN,""].includes(document.cookie)) {
+        translateDoc();
+    }
 });
