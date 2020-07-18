@@ -22,7 +22,7 @@ from database.models import *
 admin = Blueprint('admin', '__name__')
 formConf = yaml.full_load(open("database/formConfig.yml"))
 viewConf = yaml.full_load(open("database/viewConfig.yml"))
-links = list(map(lambda x: (formConf.get(x).get('description'), x), formConf))
+links = list(map(lambda x: (formConf.get(x).get('description'), x, formConf.get(x).get('accessLevel')), formConf))
 views = list(map(lambda x: (viewConf.get(x).get('description'), x, viewConf.get(x).get('accessLevel')), viewConf))
 
 
@@ -82,12 +82,32 @@ def logActivity(modelInstance:Model, activityDescription:dict, isError:bool=Fals
         db.session.add(newRecord)
 
 
+def getUserClearance():
+    try:
+        c = current_user
+        return 1 if c.isAdmin else 0
+    except:
+        return 1
+
+
+def hasClearance(f):
+    # method wraps other functions
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        clearance = getUserClearance(session.get('_user_id'))
+        if clearance == 1:
+            return f(*args, **kwargs)
+        else:
+            return redirect(url_for('index'))
+    return wrap
+
+
 @admin.route('/')
 @login_required
 def index():
     # print(session)
-    user = Person.query.get(session.get('_user_id'))
-    return render_template('private/private_page.html', firstName=user.name, links=links, views=views)
+    clearance = getUserClearance()
+    return render_template('private/private_page.html', firstName=current_user.name, links=links, views=views, userClearance=clearance)
 
 
 @admin.route('/login', methods=['GET', 'POST'])
@@ -114,6 +134,7 @@ def logout():
 @admin.route("/user", methods=['GET','POST'])
 @login_required
 def userCRUD():
+    userClearance = getUserClearance()
     model = Person
     tableName = model.__tablename__
     formName = 'personForm'
@@ -302,7 +323,7 @@ def userCRUD():
             logActivity(modelInstance, {'summary': 'No id was provided', 'description': '{0} request ({1})'.format(request.method, buttonClicked)}, True)
             db.session.commit()
 
-    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm, links=links, views=views))
+    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm, links=links, views=views, userClearance=userClearance))
     return resp
 
 
@@ -313,6 +334,11 @@ def formCRUD(name):
     try:
         objectSpecificConfig = formConf[name.lower()]
     except:
+        abort(404)
+
+    userClearance = getUserClearance()
+
+    if objectSpecificConfig['accessLevel'] > userClearance:
         abort(404)
 
     model = getattr(models, objectSpecificConfig['modelName'])
@@ -443,7 +469,7 @@ def formCRUD(name):
             logActivity(modelInstance, {'summary': "User did not provide an ID parameter", 'description': 'POST Request'}, True)
             flash('No id was provided',category='danger')
 
-    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm, links=links, views=views))
+    resp = make_response(render_template('private/{0}'.format(htmlName), form=formInstance, newForm=newForm, links=links, views=views, userClearance=userClearance))
     return resp
 
 
@@ -527,6 +553,7 @@ def experimentCRUD():
         else:
                 flash(errMessage, category='danger')
 
+    userClearance = getUserClearance()
     experimentForm = forms.experimentForm()
     newForm = True
     equipment = getEquipmentArray()
@@ -755,7 +782,7 @@ def experimentCRUD():
                     flashErrors(str(e))
                     newForm = False
 
-    resp = make_response(render_template("private/experiment_form.html", form=experimentForm, newForm=newForm, equipmentList=equipment, methodologyList=methodology, equipmentSelection=equipmentSelection, links=links, views=views))
+    resp = make_response(render_template("private/experiment_form.html", form=experimentForm, newForm=newForm, equipmentList=equipment, methodologyList=methodology, equipmentSelection=equipmentSelection, links=links, views=views, userClearance=userClearance))
     return resp
 
 
@@ -764,16 +791,20 @@ def experimentCRUD():
 def query_results(name):
     try:
         objectSpecificConfig = viewConf[name.lower()]
+        userClearance = getUserClearance()
+        if objectSpecificConfig['accessLevel'] > userClearance:
+            abort(404)
         view = getattr(models, objectSpecificConfig['viewName'])
         model = db.session.query(view).all()
         modelSchema = getattr(schemas, objectSpecificConfig['schema'])
         modelSchema = modelSchema(many=True)
         items = modelSchema.dump(model)
-        v = views
-        return render_template('private/query_results.html', query_results=model, items=items, links=links, views=views)
+
+        return render_template('private/query_results.html', query_results=model, items=items, links=links, views=views, userClearance=userClearance)
     except Exception as e:
         print(str(e))
         abort(404)
+
 
 @admin.errorhandler(404)
 def page_not_found(e):

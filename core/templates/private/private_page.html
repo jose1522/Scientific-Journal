@@ -46,8 +46,10 @@
                             <a class="dropdown-item" href="{{url_for('admin.userCRUD')}}">User</a>
                             <a class="dropdown-item" href="{{url_for('admin.experimentCRUD')}}">Experiment</a>
                             {% for link in links%}
-                            {% set key, value = link %}
-                            <a class="dropdown-item" href="{{url_for('admin.formCRUD', name=value)}}">{{key}}</a>
+                            {% set key, value, level = link %}
+                                {% if level <= userClearance%}
+                                    <a class="dropdown-item" href="{{url_for('admin.formCRUD', name=value)}}">{{key}}</a>
+                                {%endif%}
                             {% endfor %}
                         </div>
                     </li>
@@ -65,7 +67,9 @@
                         <div class="dropdown-menu" aria-labelledby="tableDropdown">
                             {% for view in views%}
                             {% set key, value, level = view %}
-                            <a class="dropdown-item" href="{{url_for('admin.query_results', name=value)}}">{{key}}</a>
+                                {% if level <= userClearance %}
+                                    <a class="dropdown-item" href="{{url_for('admin.query_results', name=value)}}">{{key}}</a>
+                                {% endif%}
                             {% endfor %}
                         </div>
                     </li>
