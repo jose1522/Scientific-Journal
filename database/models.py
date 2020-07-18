@@ -137,8 +137,6 @@ class Person(UserMixin, Model):
         """Check hashed password."""
         return check_password_hash(self.password, password)
 
-    def __repr__(self):
-        return '<User {}>'.format(self.username)
 
 class ActivityLog(Model):
     __tablename__ = 'activity_log'
@@ -260,6 +258,7 @@ t_view_activity_log = Table(
     'view_activity_log', metadata,
     Column('id', Integer, nullable=False),
     Column('code', Unicode(62), nullable=False),
+    Column('table_name', Unicode(50)),
     Column('person', Unicode(50)),
     Column('date_time', DateTime),
     Column('description', Unicode(200), nullable=False)
@@ -289,6 +288,7 @@ t_view_error_log = Table(
     Column('code', Unicode(62), nullable=False),
     Column('person', Unicode(50)),
     Column('date_time', DateTime),
+    Column('table_name', Unicode(50)),
     Column('description', Unicode(200), nullable=False),
     Column('summary', Unicode(2000), nullable=False)
 )
@@ -354,4 +354,19 @@ t_view_user_role = Table(
     Column('code', Unicode(62), nullable=False),
     Column('name', Unicode(50), nullable=False),
     Column('description', Unicode(100), nullable=False)
+)
+
+t_view_code = Table(
+    'view_code', metadata,
+    Column('id', Integer, nullable=False),
+    Column('description', Unicode(50), nullable=False)
+)
+
+t_view_consecutive = Table(
+    'view_consecutive', metadata,
+    Column('id', Integer, nullable=False),
+    Column('type', Unicode(50), nullable=False),
+    Column('description', Unicode(100), nullable=False),
+    Column('value', Integer, nullable=False),
+    Column('prefix', Unicode(50), nullable=False)
 )

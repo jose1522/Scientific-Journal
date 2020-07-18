@@ -13,34 +13,43 @@
 }
 
 </style>
+{{super()}}
+<link rel="stylesheet" type="text/css" href="/static/css/selectize.css" />
 {% endblock %}
 
 
 {% block content %}
-<div class=" card container">
-{% block card_title %}
-
-{% endblock %}
+<div class="container">
+  <div class="card">
+    <div class="card-header text-white bg-dark">
+      {% block card_title %}
+      {% endblock %}
+    </div>
 
 <div class="card-body col-lg-12 col-md-4 col-sm-6 col-xs-12">
 
     <div>
+    <div class="card-body">
+      <div>
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              {% for category, message in messages %}
-                  {% if category == 'message' %}
-                    <div class="alert alert-success" role="alert">
-                  {% else %}
-                    <div class="alert alert-{{ category }}" role="alert">
-                  {% endif %}
-                    {{ message }}
-                  </div>
-              {% endfor %}
-            {% endif %}
-        {% endwith %}
-    </div>
+        {% if messages %}
+        {% for category, message in messages %}
+        {% if category == 'message' %}
+        <div class="alert alert-success" role="alert">
+          {{ message }}
+        </div>
+        {% else %}
+        <div class="alert alert-{{ category }}" role="alert">
+          {{ message }}
+        </div>
+        {% endif %}
 
-    <form class="form" method="post" role="form"  enctype="multipart/form-data">
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+      </div>
+
+      <form class="form" method="post" role="form" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         {{ wtf.form_errors(form, hiddens="only") }}
 
@@ -49,12 +58,13 @@
         {% endblock %}
 
         {% if newForm %}
-        <button type="submit" class="btn btn-primary" name="form_button" value="create">Submit</button>
+        <button type="submit" class="btn btn-success" name="form_button" value="create">Submit</button>
         {% else %}
-        <button type="update" class="btn btn-secondary" name="form_button" value="update">Update</button>
+        <button type="update" class="btn btn-primary" name="form_button" value="update">Update</button>
         <button type="delete" class="btn btn-danger" name="form_button" value="delete">Delete</button>
         {% endif %}
-    </form>
+      </form>
+    </div>
   </div>
 </div>
 

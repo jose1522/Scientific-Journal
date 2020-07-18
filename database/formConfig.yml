@@ -1,4 +1,6 @@
 consecutive:
+  accessLevel: 1
+  description: "Consecutive"
   modelName: "Consecutive"
   formName: "consecutiveForm"
   htmlName: "consecutive_form.html"
@@ -7,6 +9,8 @@ consecutive:
     - 'type_id': 'type'
 
 job:
+  accessLevel: 1
+  description: "Job"
   modelName: "Job"
   formName: "jobForm"
   htmlName: "job_form.html"
@@ -14,26 +18,36 @@ job:
     - 'user_role_id': 'user_role'
 
 user-role:
+  accessLevel: 1
+  description: "User Role"
   modelName: "UserRole"
   formName: "userRoleForm"
   htmlName: "user_role_form.html"
 
 degree:
+  accessLevel: 1
+  description: "Degree"
   modelName: "Degree"
   formName: "degreeForm"
   htmlName: "degree_form.html"
 
 code:
+  accessLevel: 1
+  description: "Code"
   modelName: "Code"
   formName: "codeForm"
   htmlName: "code_form.html"
 
 branch:
+  accessLevel: 1
+  description: "Branch"
   modelName: "Branch"
   formName: "branchForm"
   htmlName: "branch_form.html"
 
 project:
+  accessLevel: 0
+  description: "Project"
   modelName: "Project"
   formName: "projectForm"
   htmlName: "project_form.html"
@@ -42,6 +56,8 @@ project:
     - 'branch_id': 'branch'
 
 equipment:
+  accessLevel: 1
+  description: "Equipment"
   modelName: "Equipment"
   formName: "equipmentForm"
   htmlName: "equipment_form.html"
