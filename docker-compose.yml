@@ -1,0 +1,20 @@
+version: "3.7"
+
+services:
+
+  Redis:
+    image: redis
+    restart: always
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  Journals:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      SA_PASSWORD: "Abcd1234!"
+      ACCEPT_EULA: "Y"
+    restart: always
+    container_name: Journals-v2
+    ports:
+      - "1433:1433"

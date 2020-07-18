@@ -1,0 +1,60 @@
+{% macro render_methodology_list(methodologyList) -%}
+    {% if methodologyList%}
+        <!-- <input name="originalMethodologyList" value="{{methodologyList}}" hidden=True> -->
+        <label class="control-label" for="sortablelist">Methodology</label>
+        <div class="col mb-3">
+            <div class="list-group list-group-flush" name='methodologies' id="sortablelist">
+                {% for item in methodologyList %}
+                <li class="list-group-item">
+                    <button type="button" class="delete btn-link mr-3">
+                        <img src="/static/img/trashcan-sm.svg">
+                    </button> 
+                    <input contenteditable="true" class="methodology" value="{{item.name}}" required> 
+                    </input>
+                </li>
+                {% endfor %}
+            </div>
+            <input type="button" class="btn btn-secondary addMethodologyBtn" value="Add new step">    
+        </div>
+    {% else %}
+    <label class="control-label" for="sortablelist">Methodology</label>
+    <div class="col mb-3">
+        <div class="list-group list-group-flush" name='methodologies' id="sortablelist">
+            <li class="list-group-item">
+                <button type="button" class="delete btn-link mr-3">
+                    <img src="/static/img/trashcan-sm.svg">
+                </button> 
+                <input contenteditable="true" class="methodology" placeholder="Enter some text here" required> 
+                </input>
+            </li>
+        </div>
+        <input type="button" class="btn btn-secondary addMethodologyBtn" value="Add new step">    
+    </div>
+    {% endif %}
+{%- endmacro %}
+
+{% macro render_equipment_list(equipmentList, equipmentSelection) -%}
+    {% if equipmentSelection %}
+        {% set selectedEquipmentList = [] %}
+        {% for item in equipmentSelection %}
+        <p hidden=True>
+            {{selectedEquipmentList.append(item['value'])}}
+        </p>    
+        {% endfor %}
+        <input name="originalEquipmentList" value="{{equipmentSelection}}" hidden=True>
+    {% endif %}
+
+    <div class="control-group">
+        <label for="equipment_selectize">Equipment</label>
+        <select id="equipment_selectize" multiple>
+            {% for item in equipmentList %}
+                {% set key, value = item.values() %}
+                <option value='{{key}}' {%if key in selectedEquipmentList%} selected = 'selected' {%endif%}> {{value}} </option>
+            {% endfor %}
+        </select>
+    </div>
+{%- endmacro %}
+
+{% macro emptyInput(tagName) -%}
+    <input type="hidden" name="{{tagName}}" id="{{tagName}}" value="">
+{%- endmacro %}

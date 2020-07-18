@@ -1,0 +1,21 @@
+
+
+{% extends "/private/sample_form.html" %}
+
+
+{% block card_title %}
+      User
+{% endblock %}
+{% block formFields %}
+    {{ wtf.form_field(form.nickname) }}
+    {{ wtf.form_field(form.password) }}
+    {{ wtf.form_field(form.name) }}
+    {{ wtf.form_field(form.firstSurname) }}
+    {{ wtf.form_field(form.secondSurname) }}
+    {{ wtf.form_field(form.phone) }}
+    {{ wtf.form_field(form.degree_id) }}
+    {{ wtf.form_field(form.job_id) }}
+    {{ wtf.form_field(form.signature) }}
+    {{ wtf.form_field(form.photo) }}
+    {{ wtf.form_field(form.isAdmin) }}
+{% endblock %}

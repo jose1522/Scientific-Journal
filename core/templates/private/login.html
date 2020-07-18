@@ -1,0 +1,45 @@
+{% import "bootstrap/wtf.html" as wtf %}
+{% extends "bootstrap/base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+<link rel="stylesheet" href="/static/css/login.css">
+<link rel="stylesheet" href="/static/css/private_page.css">
+{% endblock%}
+
+{% block content %}
+  <div class="container">
+    <div class="card">
+      <div class="card-header text-white bg-dark">
+          Login 
+      </div>
+      <div class="card-body">
+        <!-- alerts  -->
+      <div>
+          {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'message' %}
+                      <div class="alert alert-success" role="alert">
+                    {% else %}
+                      <div class="alert alert-{{ category }}" role="alert">
+                    {% endif %}
+                      {{ message }}
+                    </div>
+                {% endfor %}
+              {% endif %}
+          {% endwith %}
+      </div>
+    
+      <form class="form" method="post" role="form"  enctype="multipart/form-data">
+          {{ form.hidden_tag() }}
+          {{ wtf.form_errors(form, hiddens="only") }}
+
+          {{ wtf.form_field(form.nickname) }}
+          {{ wtf.form_field(form.password) }}
+          {{ wtf.form_field(form.submit, class="color btn btn-primary") }}
+      </form>
+    </div>
+  </div>
+
+{% endblock %}
