@@ -29,7 +29,7 @@
             <a class="navbar-brand" href="{{url_for('admin.index')}}">Home</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#newItemOptions"
                 aria-controls="newItemOptions" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
+                <span class="navbar-toggler-icon"></span
             </button>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#tableOptions"
             aria-controls="tableOptions" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,6 +72,25 @@
                                     <a class="dropdown-item" href="{{url_for('admin.query_results', name=value)}}">{{key}}</a>
                                 {% endif%}
                             {% endfor %}
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Language Dropdown -->
+            <div class="collapse navbar-collapse active" id="languageOptions">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="languageOptions" data-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                            Language
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="languageOptions">
+                            <a class="dropdown-item" href="#" onclick="setLanguageCookie('en')">English</a>
+                            <a class="dropdown-item" href="#" onclick="setLanguageCookie('es')">Spanish</a>
+                            <a class="dropdown-item" href="#" onclick="setLanguageCookie('it')">Italian</a>
+                            <a class="dropdown-item" href="#" onclick="setLanguageCookie('de')">German</a>
+                            <a class="dropdown-item" href="#" onclick="setLanguageCookie('zh-CN')">Chinese</a>
                         </div>
                     </li>
                 </ul>

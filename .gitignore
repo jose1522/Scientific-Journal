@@ -10,3 +10,4 @@ __pycache__
 .DS_Store
 database/.DS_Store
 uploads/.DS_Store
+/.idea
