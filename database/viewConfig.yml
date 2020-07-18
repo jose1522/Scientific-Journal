@@ -1,0 +1,65 @@
+user:
+  accessLevel: 0
+  schema: "PersonSchema"
+  description: "Users"
+  viewName: "t_view_person"
+
+project:
+  accessLevel: 0
+  schema: "ProjectSchema"
+  description: "Projects"
+  viewName: "t_view_project"
+
+branch:
+  accessLevel: 1
+  schema: "BranchSchema"
+  description: "Branches"
+  viewName: "t_view_branch"
+
+code:
+  accessLevel: 1
+  schema: "CodeSchema"
+  description: "Codes"
+  viewName: "t_view_code"
+
+role:
+  accessLevel: 1
+  schema: "RoleSchema"
+  description: "User Roles"
+  viewName: "t_view_user_role"
+
+job:
+  accessLevel: 1
+  schema: "JobSchema"
+  description: "Jobs"
+  viewName: "t_view_job"
+
+degree:
+  accessLevel: 1
+  schema: "DegreeSchema"
+  description: "Degrees"
+  viewName: "t_view_degree"
+
+activity_log:
+  accessLevel: 1
+  schema: "ActivitySchema"
+  description: "Activity Log"
+  viewName: "t_view_activity_log"
+
+error_log:
+  accessLevel: 1
+  schema: "ErrorSchema"
+  description: "Error Log"
+  viewName: "t_view_error_log"
+
+experiment:
+  accessLevel: 0
+  schema: "ExperimentSchema"
+  description: "Experiments"
+  viewName: "t_view_experiment"
+
+consecutive:
+  accessLevel: 1
+  schema: "ConsecutiveSchema"
+  description: "Consecutive"
+  viewName: "t_view_consecutive"

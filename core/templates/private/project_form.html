@@ -1,0 +1,12 @@
+{% extends "/private/sample_form.html" %}
+
+{% block formFields %}
+    {{ wtf.form_field(form.name) }}
+    {{ wtf.form_field(form.price) }}
+    {{ wtf.form_field(form.person_id) }}
+    {{ wtf.form_field(form.branch_id) }}
+{% endblock %}
+
+{% block card_title %}
+    Project
+{% endblock %}
