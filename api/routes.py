@@ -1,4 +1,6 @@
-from flask import Blueprint
+from flask import Blueprint, request
+from googletrans import Translator
+import json
 
 api = Blueprint('api', '__name__')
 
