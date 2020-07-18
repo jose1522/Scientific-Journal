@@ -63,7 +63,7 @@ def logActivity(modelInstance:Model, activityDescription:dict, isError:bool=Fals
     if isError:
         newRecord = ErrorLog(
                             id = 0,
-                            person_id = session['id'],
+                            person_id = current_user.id,
                             date_time = datetime.today(),
                             table_name_id = table_name,
                             description = activityDescription['description'],
@@ -75,7 +75,7 @@ def logActivity(modelInstance:Model, activityDescription:dict, isError:bool=Fals
         newRecord = ActivityLog(
                             id = 0,
                             table_name_id = table_name,
-                            person_id = session['id'],
+                            person_id = current_user.id,
                             date_time = datetime.today(),
                             description = activityDescription['description']
         )
@@ -806,6 +806,10 @@ def query_results(name):
         print(str(e))
         abort(404)
 
+@admin.route("/test")
+@login_required
+def test():
+    return render_template('private/api_call.html', links=links, views=views, userClearance=getUserClearance())
 
 @admin.errorhandler(404)
 def page_not_found(e):

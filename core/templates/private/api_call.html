@@ -1,0 +1,30 @@
+{% from "bootstrap/pagination.html" import render_pagination %}
+{% extends "private/private_page.html" %}
+
+{% block content %}
+<script>
+    function getData(){
+        let api_url = window.location.origin+"/api/fetch/activity_log"
+        let body = {}
+        $.ajax({
+            url: api_url,
+            contentType: "application/json",
+            dataType: 'json',
+            data: body,
+            success: function(result){
+                console.log(result)
+            }
+        });
+
+    };
+</script>
+
+<div class="container">
+    <div class="card">
+        <div class="card-body">
+            <button onclick="getData()">Get Data</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
