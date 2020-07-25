@@ -1,9 +1,8 @@
 import enum
-import core.util.parsers as customParsers
-import core.util.dictTools as dictTools
-import core.integration.apiConnection as api
+from core.util import dictTools, parsers as customParsers
+from . import apiConnection as api
 import json
-
+from core import settings
 
 # List of the categories from the configuration file
 class EmailCategory(enum.Enum):
@@ -91,7 +90,7 @@ class Email:
 
     def send(self):
         self.__prepareData()
-        self.sg.addToHeaders("Authorization", "Bearer " + app.config.get("SENDGRID_KEY"))
+        self.sg.addToHeaders("Authorization", "Bearer " + settings.SENDGRID_KEY)
         self.sg.addToHeaders("content-type", "application/json")
         self.sg.setData(json.dumps(self.data))
         status, text = self.sg.sendCall()

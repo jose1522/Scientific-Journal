@@ -4,9 +4,14 @@ from googletrans import Translator
 from database import models, schemas, db
 import yaml
 import json
+import os
 
 api = Blueprint('api', '__name__')
-viewConf = yaml.full_load(open("database/viewConfig.yml"))
+wd = os.getcwd()
+print(os.path.exists(os.path.join(wd,'src')))
+if not os.path.exists(os.path.join(wd, 'database')):
+    wd = os.path.join(wd, 'src')
+viewConf = yaml.full_load(open(os.path.join(wd,"database/viewConfig.yml")))
 
 def getUserClearance():
     try:

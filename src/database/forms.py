@@ -1,11 +1,10 @@
 from .models import *
 from database import db
-from wtforms_alchemy import model_form_factory, QuerySelectField, ModelFieldList, ModelFormField
-from flask_wtf import FlaskForm, file
-from wtforms import StringField,IntegerField,BooleanField,FileField,PasswordField, SelectField, TextAreaField, MultipleFileField, SubmitField
+from wtforms_alchemy import model_form_factory, QuerySelectField
+from flask_wtf import FlaskForm
+from wtforms import StringField,IntegerField,BooleanField,FileField,PasswordField, TextAreaField, MultipleFileField, SubmitField
 from wtforms.ext.sqlalchemy.fields import QuerySelectField as qs
-from wtforms.validators import DataRequired, Length, Email, EqualTo, Length, Optional
-from wtforms.fields import FormField
+from wtforms.validators import DataRequired, Length
 
 BaseModelForm = model_form_factory(FlaskForm)
 

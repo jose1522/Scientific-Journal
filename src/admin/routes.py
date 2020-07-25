@@ -1,10 +1,10 @@
 from flask import Blueprint, session, render_template, request, abort, redirect, url_for, flash, make_response
 from database import forms, models, schemas
+from database import *
+from database.models import *
 from core import *
-import core
-from core.util import dictTools
+# import core
 import os
-from sqlalchemy.exc import IntegrityError
 import json
 import yaml
 import uuid
@@ -15,13 +15,18 @@ from datetime import datetime
 from functools import wraps
 from flask_login import login_required, logout_user, current_user, login_user
 from . import login_manager
+from core import settings
 
 
-from database.models import *
+
 
 admin = Blueprint('admin', '__name__')
-formConf = yaml.full_load(open("database/formConfig.yml"))
-viewConf = yaml.full_load(open("database/viewConfig.yml"))
+wd = os.getcwd()
+print(os.path.exists(os.path.join(wd,'src')))
+if not os.path.exists(os.path.join(wd, 'database')):
+    wd = os.path.join(wd, 'src')
+formConf = yaml.full_load(open(os.path.join(wd, "database/formConfig.yml")))
+viewConf = yaml.full_load(open(os.path.join(wd, "database/viewConfig.yml")))
 links = list(map(lambda x: (formConf.get(x).get('description'), x, formConf.get(x).get('accessLevel')), formConf))
 views = list(map(lambda x: (viewConf.get(x).get('description'), x, viewConf.get(x).get('accessLevel')), viewConf))
 
@@ -44,11 +49,11 @@ def unauthorized():
 
 def allowed_file(filename):
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in app.config.get('ALLOWED_EXTENSIONS')
+           filename.rsplit('.', 1)[1].lower() in settings.ALLOWED_EXTENSIONS
 
 
 def encryptData(unencryptedData):
-    key = app.config.get('ENCRYPTION_KEY')
+    key = settings.ENCRYPTION_KEY
     cipher_suite = Fernet(bytes(key.encode()))
     encryptedData = cipher_suite.encrypt(bytes(unencryptedData.encode()))
     return encryptedData
@@ -144,7 +149,7 @@ def userCRUD():
     foreignKeyMappings ={'degree_id': 'degree', 'job_id': 'job'}
     newForm = True
     idParameter = request.args.get('id') if request.args else None
-    formTemplate:forms.ModelForm = getattr(forms, formName)
+    formTemplate: forms.ModelForm = getattr(forms, formName)
     formInstance = formTemplate() # instantiate the class
     req = request.form
 
@@ -244,7 +249,7 @@ def userCRUD():
 
                             # Saves the image in the server
                             f.data.save(os.path.join(
-                                app.config.get('UPLOAD_FOLDER'), uniqueID
+                                settings.UPLOAD_FOLDER, uniqueID
                             ))
 
                             # Adds the file to the list before insert
@@ -300,7 +305,7 @@ def userCRUD():
 
                             # Saves the image in the server
                             f.save(os.path.join(
-                                app.config.get('UPLOAD_FOLDER'), uniqueID
+                                settings.UPLOAD_FOLDER, uniqueID
                             ))
 
                     db.session.add(modelInstance)
@@ -352,7 +357,7 @@ def formCRUD(name):
     idParameter = request.args.get('id') if request.args else None
 
 
-    formTemplate:forms.ModelForm = getattr(forms, formName)
+    formTemplate: forms.ModelForm = getattr(forms, formName)
     formInstance = formTemplate() # instantiate the class
 
     def redirectToDefaultRoute():
@@ -620,7 +625,7 @@ def experimentCRUD():
                             item.filename = uniqueID
                             # Saves the image in the server
                             item.save(os.path.join(
-                                core.app.config.get('UPLOAD_FOLDER'), uniqueID
+                                settings.UPLOAD_FOLDER, uniqueID
                             ))
                             insertIntoTable('experiment_image', 'photo,experiment_id',"'{0}','{1}'".format(uniqueID, newExperiment.id))
 
@@ -712,7 +717,7 @@ def experimentCRUD():
                                 uniqueID = str(uuid.uuid4()) + "." + item.filename.rsplit('.', 1)[1].lower()
                                 item.filename = uniqueID
                                 # Saves the image in the server
-                                item.save(os.path.join(core.app.config.get('UPLOAD_FOLDER'), uniqueID))
+                                item.save(os.path.join(settings.UPLOAD_FOLDER, uniqueID))
                                 insertIntoTable('experiment_image', 'photo,experiment_id', "'{0}','{1}'".format(uniqueID, idValue))
                                 logActivity(ExperimentImage, {'summary': '', 'description': '{0} request for Experiment id {1} (Create)'.format(request.method, idValue)})
 

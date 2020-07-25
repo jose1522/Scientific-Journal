@@ -2,19 +2,48 @@ version: "3.7"
 
 services:
 
-  Redis:
+  nginx:
+    build: ./nginx
+    container_name: nginx
+    restart: always
+    ports:
+      - "80:80"
+
+  redis:
     image: redis
     restart: always
     container_name: redis
+    expose:
+      - 6379
     ports:
       - "6379:6379"
 
-  Journals:
+  journals:
     image: mcr.microsoft.com/mssql/server:2019-latest
     environment:
       SA_PASSWORD: "Abcd1234!"
       ACCEPT_EULA: "Y"
     restart: always
     container_name: Journals-v2
+    expose:
+      - 1433
     ports:
       - "1433:1433"
+
+  flask:
+    build: ./src
+    container_name: flask
+    restart: always
+    environment:
+      - APP_NAME=Scientific-Journals
+    expose:
+      - 8080
+
+  client:
+    image: mcr.microsoft.com/dotnet/core/samples:aspnetapp
+    restart: always
+    container_name: aspnetsamples
+    expose:
+      - 80
+    ports:
+      - "8000:80"

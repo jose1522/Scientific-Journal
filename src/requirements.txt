@@ -1,5 +1,5 @@
 flask
-pandas
+uwsgi
 passlib
 python-dotenv
 requests
@@ -20,3 +20,4 @@ pyyaml
 pyodbc
 Flask-RESTPlus
 cryptography
+googletrans
