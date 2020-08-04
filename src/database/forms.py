@@ -20,10 +20,10 @@ class codeForm(ModelForm):
         exclude = ['available']
 
 
-class branchForm(ModelForm):
-    class Meta:
-        model = Branch
-        exclude = ['active']
+# class branchForm(ModelForm):
+#     class Meta:
+#         model = Branch
+#         exclude = ['active']
 
 
 class projectForm(ModelForm):
@@ -99,14 +99,14 @@ class personForm(FlaskForm):
     secondSurname = StringField('Second Surname', validators=[DataRequired()])
     phone = IntegerField('Phone Number', validators=[DataRequired()])
     degree_id = qs(
-        query_factory=lambda: Degree.query.filter_by(active=1).order_by(text("name asc")),
+        query_factory=lambda: Degree.getByAll(),
         get_pk=lambda a: a.id,
         get_label=lambda a: a.name,
         allow_blank=False,
         label='Academic Degree'
     )
     job_id = qs(
-        query_factory=lambda: Job.query.filter_by(active=1).order_by(text("name asc")),
+        query_factory=lambda: Job.getByAll(),
         get_pk=lambda a: a.id,
         get_label=lambda a: a.name,
         allow_blank=False,

@@ -3,14 +3,16 @@ import redis
 from dotenv import load_dotenv
 load_dotenv()
 
+ENCRYPTION_KEY = environ.get('ENCRYPTION_KEY')
+
 # Image Uploads
 UPLOAD_FOLDER = environ.get('UPLOAD_FOLDER')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 MAX_CONTENT_LENGTH = 16 * (1024 ** 2) # Max image size is 16Mb
 
+
 class BaseConfig:
     SECRET_KEY = environ.get('SECRET_KEY')
-    ENCRYPTION_KEY = environ.get('ENCRYPTION_KEY')
     API_KEY = environ.get('API_KEY')
     SENDGRID_KEY = environ.get('SENDGRID_KEY')
     WTF_CSRF_SECRET_KEY = environ.get('WTF_CSRF_SECRET_KEY')

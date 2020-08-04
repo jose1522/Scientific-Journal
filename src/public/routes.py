@@ -1,6 +1,10 @@
 from flask import Blueprint, url_for, session, make_response, redirect
 from functools import wraps
+from database import db, models
+from database.models import *
 import json
+import os
+import yaml
 
 public = Blueprint('public', '__name__')
 
@@ -33,4 +37,41 @@ def logout():
 
 @public.route("/test")
 def test():
-    return "Hello World"
+    # for item in ['Nanotechonology','Quantum Computing']:
+    #     newID = TableRef.getNextID('branch')
+    #     newBranch = Branch()
+    #     newBranch.name = item
+    #     newBranch.id = newID
+    #     newBranch.save()
+    #
+    # branchInfo = Branch.getByID(0)
+    # branchInfo.active = '0'
+    # branchInfo.save()
+    #
+    # branchInfo = Branch.getByID(0)
+    # print(branchInfo.name)
+
+    equipmentInfo = Degree.getByAll()
+
+    return str("Hi")
+
+@public.route("/initdb")
+def initDB():
+    wd = os.getcwd()
+    file = yaml.full_load(open(os.path.join(wd, "src/database/dbInitialization.yml")))
+    for className in file:
+        for row in file[className]:
+            model = getattr(models, className)
+            tableName = model.__tablename__
+            modelInstance = model()
+            if tableName != 'table_ref':
+                newID = TableRef.getNextID(tableName)
+            for key, value in row.items():
+                if key == 'id':
+                    value = newID
+                if not isinstance(value,str):
+                    value = str(value)
+                modelInstance.__setattr__(key, value)
+            modelInstance.save()
+            print(f'{className}: {str(row)}')
+    return str("Hi")

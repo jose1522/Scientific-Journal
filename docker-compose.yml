@@ -23,8 +23,9 @@ services:
     environment:
       SA_PASSWORD: "Abcd1234!"
       ACCEPT_EULA: "Y"
-    restart: always
-    container_name: Journals-v2
+    volumes:
+      - ./journal/scripts/:/scripts/
+    container_name: journals
     expose:
       - 1433
     ports:
@@ -45,5 +46,3 @@ services:
     container_name: aspnetsamples
     expose:
       - 80
-    ports:
-      - "8000:80"

@@ -1,24 +1,18 @@
 from flask import Blueprint, session, render_template, request, abort, redirect, url_for, flash, make_response
+from flask_login import login_required, logout_user, current_user, login_user
 from database import forms, models, schemas
-from database import *
 from database.models import *
 from core import *
-# import core
+from werkzeug.utils import  secure_filename
+from cryptography.fernet import Fernet
+from datetime import datetime
+from functools import wraps
+from . import login_manager
+from core import settings
 import os
 import json
 import yaml
 import uuid
-from werkzeug.utils import  secure_filename
-from werkzeug.security import generate_password_hash
-from cryptography.fernet import Fernet
-from datetime import datetime
-from functools import wraps
-from flask_login import login_required, logout_user, current_user, login_user
-from . import login_manager
-from core import settings
-
-
-
 
 admin = Blueprint('admin', '__name__')
 wd = os.getcwd()
@@ -35,7 +29,7 @@ views = list(map(lambda x: (viewConf.get(x).get('description'), x, viewConf.get(
 def load_user(user_id):
     """Check if user is logged-in on every page load."""
     if user_id is not None:
-        payload = Person.query.filter((Person.active == 1) & (Person.id == user_id)).first()
+        payload = Person.getByID(user_id)
         return payload
     return None
 
@@ -66,25 +60,26 @@ def logActivity(modelInstance:Model, activityDescription:dict, isError:bool=Fals
         table_name = modelInstance
 
     if isError:
+        newID = TableRef.getNextID('error_log')
         newRecord = ErrorLog(
-                            id = 0,
-                            person_id = current_user.id,
-                            date_time = datetime.today(),
-                            table_name_id = table_name,
-                            description = activityDescription['description'],
-                            summary = activityDescription['summary']
+                            id=newID,
+                            person_id=current_user.id,
+                            date_time=datetime.today(),
+                            table_name_id=table_name,
+                            description=activityDescription['description'],
+                            summary=activityDescription['summary']
         )
-        db.session.add(newRecord)
-        db.session.commit()
-    else :
+        newRecord.save()
+    else:
+        newID = TableRef.getNextID('activity_log')
         newRecord = ActivityLog(
-                            id = 0,
-                            table_name_id = table_name,
-                            person_id = current_user.id,
-                            date_time = datetime.today(),
-                            description = activityDescription['description']
+                            id=newID,
+                            table_name_id=table_name,
+                            person_id=current_user.id,
+                            date_time=datetime.today(),
+                            description=activityDescription['description']
         )
-        db.session.add(newRecord)
+        newRecord.save()
 
 
 def getUserClearance():
@@ -120,7 +115,7 @@ def index():
 def login():
     form = forms.LoginForm()
     if form.validate_on_submit():
-        user = Person.query.filter_by(nickname=form.nickname.data).first()
+        user = Person.getByNickname(form.nickname.data)
         if user and user.check_password(password=form.password.data):
             login_user(user)
             return redirect(url_for('admin.index'))
@@ -146,7 +141,7 @@ def userCRUD():
     formName = 'personForm'
     htmlName = 'person_form.html'
     imageFields = ['signature', 'photo']
-    foreignKeyMappings ={'degree_id': 'degree', 'job_id': 'job'}
+    foreignKeyMappings = {'degree_id': 'degree', 'job_id': 'job'}
     newForm = True
     idParameter = request.args.get('id') if request.args else None
     formTemplate: forms.ModelForm = getattr(forms, formName)
@@ -161,7 +156,7 @@ def userCRUD():
         for item in formInstance.data:
             try:
                 if item != 'csrf_token':
-                    if hasattr(modelInstance,item) and item != 'password':
+                    if hasattr(modelInstance, item):
                         modelInstance.__setattr__(item, req[item])
             except:
                 continue
@@ -177,36 +172,43 @@ def userCRUD():
         else:
             flash(errMessage, category='danger')
 
+    def saveImages():
+        for field in imageFields:
+            f = getattr(formInstance, field).data
+            filename = secure_filename(f.filename)
+            if filename != '':
+                # Sets a unique name for the file and replaces the name in the form
+                uniqueID = str(uuid.uuid4()) + "." + f.filename.rsplit('.', 1)[1].lower()
+                f.filename = uniqueID
+                modelInstance.__setattr__(field, f.filename)
+
+                # Saves the image in the server
+                f.save(os.path.join(
+                    settings.UPLOAD_FOLDER, uniqueID
+                ))
+
     if request.method == 'GET':
         if idParameter:
             newForm = False
             try:
                 # Gets the data from the DB
-                modelInstance = model.query.get(idParameter)
+                modelInstance = model.getByID(idParameter)
 
                 # Raises an exception if the ID doesn't exist
-                if modelInstance is None:
+                if not modelInstance:
                     raise Exception('ID {0} not found'.format(idParameter))
 
-                # Checks if the record hasn't been soft-deleted
-                if hasattr(modelInstance, 'active'):
-                    abort(400) if modelInstance.__getattribute__('active') == 0 else None
+                # Updates relations
                 formInstance = formTemplate(obj=modelInstance)
-
-                # Select current value in dropdown menu
-                for field in formInstance:
-                    if field.name in foreignKeyMappings:
-                        formInstance[field.name].data = getattr(modelInstance, foreignKeyMappings[field.name])
-
-                # Log request to the DB
-                logActivity(modelInstance, {'summary': '', 'description': '{0} request for ID {1}'.format(request.method, idParameter)})
-                db.session.commit()
+                fkData = modelInstance.fkToDict()
+                for key, value in fkData.items():
+                    if key in formInstance:
+                        formInstance[key].data = value
 
             except Exception as e:
                 modelInstance = model()
                 # Log error to the DB
                 logActivity(modelInstance, {'summary': str(e), 'description': '{0} request'.format(request.method)},True)
-                db.session.commit()
                 abort(404)
     else:
         # req = request.form
@@ -217,49 +219,15 @@ def userCRUD():
 
             try:
                 # Encrypt the password and update the form instance
-                password = req['password']
-                if password is None or password == '':
+                if req['password'] is None or req['password'] == '':
                     raise Exception("Error! Password field cannot be empty")
-                else:
-                    # password = encryptData(password).decode(encoding='UTF-8')
-                    password = generate_password_hash(password, method='sha256')
-
-                # Creates lists for column names and values to be inserted in DML syntax
-                formFieldNames = [x for x in list(formInstance.data.keys()) if x not in ['csrf_token', 'password', 'isAdmin'] and x in req]
-                formFieldValues = [x for x in list(map(lambda x: "'{0}'".format(req[x]) if x in req and x not in ['password','isAdmin'] else None, formFieldNames)) if x is not None]
-
-                # Convert boolean value to integer
-                isAdmin = 1 if formInstance.isAdmin.data else 0
-
-                # Append the encrypted password and isAdmin to the lists
-                formFieldNames.append('password')
-                formFieldNames.append('isAdmin')
-                formFieldValues.append("'{0}'".format(password))
-                formFieldValues.append("'{0}'".format(isAdmin))
 
                 if formInstance.validate_on_submit():
-                    for field in imageFields:
-                        f = getattr(formInstance, field)
-                        filename = secure_filename(f.data.filename)
-                        if filename != '':
-                            # Sets a unique name for the file and replaces the name in the form
-                            uniqueID = str(uuid.uuid4()) + "." + f.data.filename.rsplit('.', 1)[1].lower()
-                            f.data.filename = uniqueID
-                            formInstance.__setattr__(field, f)
-
-                            # Saves the image in the server
-                            f.data.save(os.path.join(
-                                settings.UPLOAD_FOLDER, uniqueID
-                            ))
-
-                            # Adds the file to the list before insert
-                            formFieldNames.append(field)
-                            formFieldValues.append("'"+uniqueID+"'")
-
-                    # Makes insert and commits
-                    db.session.execute("Insert into {0} ({1}) values ({2})".format(tableName, ", ".join(formFieldNames),", ".join(formFieldValues)))
-                    logActivity(modelInstance, {'summary': '', 'description': '{0} request ({1})'.format(request.method, buttonClicked)})
-                    db.session.commit()
+                    newID = TableRef.getNextID(tableName)
+                    populateDataModel(modelInstance)
+                    modelInstance.id = newID
+                    saveImages()
+                    modelInstance.save()
                     return redirectToDefaultRoute()
 
             except Exception as e:
@@ -269,51 +237,21 @@ def userCRUD():
                 else:
                     flashErrors(str(e))
                     logActivity(modelInstance, {'summary': ';'.join(formInstance.errors.items()), 'description': '{0} request ({1})'.format(request.method, buttonClicked)}, True)
-                db.session.commit()
 
         elif idParameter:
             try:
                 if buttonClicked == 'delete':
-                    modelInstance = model.query.get(request.args.get('id'))
-                    if hasattr(modelInstance, 'active'):
-                        modelInstance.__setattr__('active', '0')
-                        db.session.add(modelInstance)
-                    else:
-                        db.session.delete(modelInstance)
+                    modelInstance = model.getByID(request.args.get('id'))
+                    modelInstance.delete()
 
                 elif formInstance.validate_on_submit():
-                    modelInstance = populateDataModel(model.query.get(request.args.get('id')))
-
-                    # Convert boolean value to integer
-                    modelInstance.isAdmin = 1 if formInstance.isAdmin.data else 0
-
-                    # Updating password if a new one is specified
-                    newPasswordEntered = req['password']
-                    if newPasswordEntered is not None and newPasswordEntered != '':
-                        modelInstance.password = encryptData(req['password']).decode(encoding='UTF-8')
-
-                    # Save images submitted by form
-                    for field in imageFields:
-                        f = getattr(formInstance, field).data
-                        filename = secure_filename(f.filename)
-                        if filename != '':
-
-                            # Sets a unique name for the file and replaces the name in the form
-                            uniqueID = str(uuid.uuid4()) + "." + f.filename.rsplit('.', 1)[1].lower()
-                            f.filename = uniqueID
-                            modelInstance.__setattr__(field, f.filename)
-
-                            # Saves the image in the server
-                            f.save(os.path.join(
-                                settings.UPLOAD_FOLDER, uniqueID
-                            ))
-
-                    db.session.add(modelInstance)
+                    modelInstance = populateDataModel(model.getByID(request.args.get('id')))
+                    saveImages()
+                    modelInstance.save()
                     newForm = False
 
                 # Create log in the DB
                 logActivity(modelInstance, {'summary': '', 'description': '{0} request ({1}) for id {2}'.format(request.method, buttonClicked, idParameter)})
-                db.session.commit()
 
                 if buttonClicked == 'delete':
                     return redirectToDefaultRoute()
@@ -497,11 +435,11 @@ def experimentCRUD():
         except:
             return []
 
-    def getExperimentEquipmentArray(id=None):
+    def getExperimentEquipmentArray(id:str=None):
         if id is not None:
-            equipment = Equipment.query.join(t_experiment_equipment).join(Experiment).filter( (t_experiment_equipment.c.experiment_id == id) & (t_experiment_equipment.c.active == True)).all()
+            equipment = Equipment.getByID(id)
         else:
-            equipment =  Equipment.query.join(t_experiment_equipment).join(Experiment).filter(t_experiment_equipment.c.active == True).all()
+            equipment = ExperimentEquipment.getByAll()
 
         try:
             if isinstance(equipment, list):
