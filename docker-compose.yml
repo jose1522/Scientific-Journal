@@ -19,10 +19,7 @@ services:
       - "6379:6379"
 
   journals:
-    image: mcr.microsoft.com/mssql/server:2019-latest
-    environment:
-      SA_PASSWORD: "Abcd1234!"
-      ACCEPT_EULA: "Y"
+    image: jose1522/scientific-journals
     volumes:
       - ./journal/scripts/:/scripts/
     container_name: journals

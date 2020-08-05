@@ -423,9 +423,9 @@ def experimentCRUD():
 
     def getEquipmentArray(id=None):
         if id is not None:
-            equipment = Equipment.query.get(id)
+            equipment = Equipment.getByID(id)
         else:
-            equipment = Equipment.query.all()
+            equipment = Equipment.getByAll()
 
         try:
             if isinstance(equipment, list):
@@ -437,48 +437,36 @@ def experimentCRUD():
 
     def getExperimentEquipmentArray(id:str=None):
         if id is not None:
-            equipment = Equipment.getByID(id)
+            equipment = ExperimentEquipment.getByExperimentID(id)
         else:
             equipment = ExperimentEquipment.getByAll()
 
         try:
             if isinstance(equipment, list):
-                return list(map(lambda x: {'value': x.id, 'name': "{0}, {1}".format(x.name, x.serial)}, equipment))
+                return list(map(lambda x: {'value': x.get('id'), 'name': "{0}, {1}".format(x.get('name'), x.get('serial'))}, equipment))
             else:
                 return [{'value': equipment.id, 'name': "{0}, {1}".format(equipment.name, equipment.serial)}]
-        except:
+        except Exception as e:
             return []
 
     def getMethodologyArray(id=None):
         if id is not None:
-            methodology = Methodology.query.join(Experiment).filter( (Methodology.experiment_id == id) & (Methodology.active == True)).all()
+            methodology = Methodology.getByExperimentID(id)
         else:
-            methodology = Methodology.query.join(Experiment).filter(Methodology.active == True).all()
+            methodology = Methodology.getByAll()
         try:
             if isinstance(methodology, list):
-                l = list(map(lambda x: {'value': x.id, 'name': "{0}".format(x.description)}, methodology))
-                l.sort(key=lambda x: x['value'])
-                return l
+                return list(map(lambda x: {'value': x.id, 'name': x.description}, methodology))
             else:
-                return [{'value': methodology.id, 'name': "{0}".format( methodology.description)}]
+                return [{'value': methodology.id, 'name': methodology.description}]
         except Exception as e:
-            print(str(e))
             return []
 
     def getExperimentData(id):
-        experiment = Experiment.query.get(id)
-
+        experiment = Experiment.getByID(id)
         if experiment is None:
             abort(404)
-        if hasattr(experiment, 'active'):
-            abort(404) if experiment.active == 0 else None
         return experiment
-
-    def insertIntoTable(tableName,columns,values):
-        try:
-            db.session.execute("Insert into {0} ({1}) values ({2})".format(tableName, columns, values))
-        except Exception as e:
-            raise Exception(str(e))
 
     def redirectToDefaultRoute():
         experimentForm = forms.experimentForm()
@@ -497,12 +485,26 @@ def experimentCRUD():
         else:
                 flash(errMessage, category='danger')
 
+    def populateDataModel(modelInstance):
+        # Updates the form instance with values from the website
+        for item in experimentForm.data:
+            try:
+                if item != 'csrf_token':
+                    if hasattr(modelInstance, item):
+                        modelInstance.__setattr__(item, f[item])
+            except:
+                continue
+        return modelInstance
+
     userClearance = getUserClearance()
     experimentForm = forms.experimentForm()
     newForm = True
     equipment = getEquipmentArray()
     equipmentSelection = None
     methodology = None
+    tableName = "experiment"
+    f = request.form
+
 
     if request.method == 'GET':
         if request.args.get('id'): # If no ID, then the standard blank template will be rendered
@@ -512,47 +514,49 @@ def experimentCRUD():
             methodology = getMethodologyArray(idValue)
             experimentForm = forms.experimentForm(obj=experimentData)
 
-            # Data for queryselect objects needs to be an object, but they come as int by default
+            # Data for query select objects needs to be an object, but they come as int by default
             experimentForm.project_id.data = experimentData.project
             experimentForm.experimenter_id.data = experimentData.experimenter
             experimentForm.witness_id.data = experimentData.witness
             newForm = False
 
     else:
-        f = request.form
+
         action = f['form_button']
         if action == 'create':
             try:
                 if experimentForm.validate_on_submit():
-                    # Prepare list for manual insert
-                    fieldList = ['name', 'date', 'description', 'main_objective', 'project_id', 'experimenter_id', 'witness_id']
-                    valueList = list(map(lambda x: "'{0}'".format(f[x]),fieldList))
+                    newID = TableRef.getNextID(tableName)
+                    modelInstance = Experiment()
 
-                    # Insert data and retrieve new record
-                    insertIntoTable("experiment", ", ".join(fieldList), ", ".join(valueList))
-                    newExperiment = Experiment.query.filter((Experiment.project_id == f['project_id']) & (Experiment.name == f['name'])).first()
+                    populateDataModel(modelInstance)
+                    modelInstance.id = newID
+                    modelInstance.save()
 
                     # Insert Methodology
-                    methodologyList = []
-                    for key, value in f.items():
-                        if 'methodology' in key: methodologyList.append(value)
-
-                     # if len(methodologyList) > 1:
                     stepIndex = 0
-                    for item in methodologyList:
-                        columns = ['step', 'description', 'experiment_id']
-                        values = [str(stepIndex), "'{0}'".format(item), str(newExperiment.id)]
-                        insertIntoTable('methodology', ' , '.join(columns), ' , '.join(values))
-                        stepIndex += 1
+                    for key, value in f.items():
+                        if 'methodology' in key:
+                            newMethodology = Methodology()
+                            auxID = TableRef.getNextID('methodology')
+                            newMethodology.id = auxID
+                            newMethodology.step = stepIndex
+                            newMethodology.experiment_id = newID
+                            newMethodology.description = value
+                            newMethodology.save()
+                            stepIndex += 1
 
                     # Insert Equipment
                     if f['equipment'] is not None:
                         equipmentList:list = f['equipment'].split(',')
                         for item in equipmentList:
                             if item != '':
-                                columns = ['experiment_id','equipment_id']
-                                values = [str(newExperiment.id),str(item)]
-                                insertIntoTable('experiment_equipment', ' , '.join(columns), ' , '.join(values))
+                                newEquipment = ExperimentEquipment()
+                                auxID = TableRef.getNextID(newEquipment.__tablename__)
+                                newEquipment.id = auxID
+                                newEquipment.equipment_id = item
+                                newEquipment.experiment_id = newID
+                                newEquipment.save()
 
                     # Save the images to the server and store the names in the DB
                     for item in experimentForm.photos.data:
@@ -565,10 +569,14 @@ def experimentCRUD():
                             item.save(os.path.join(
                                 settings.UPLOAD_FOLDER, uniqueID
                             ))
-                            insertIntoTable('experiment_image', 'photo,experiment_id',"'{0}','{1}'".format(uniqueID, newExperiment.id))
+                            newExperimentImage = ExperimentImage()
+                            auxID = TableRef.getNextID(newExperimentImage.__tablename__)
+                            newExperimentImage.id = auxID
+                            newExperimentImage.experiment_id = newID
+                            newExperimentImage.photo = item.filename
+                            newExperimentImage.save()
 
                     logActivity(Experiment, {'summary': '', 'description': '{0} request: create new record'.format(request.method)})
-                    db.session.commit()
                     flash('New experiment created', 'success')
                     redirectToDefaultRoute()
                 else:
@@ -579,7 +587,6 @@ def experimentCRUD():
             except Exception as e:
                 db.session.rollback()
                 logActivity(Experiment,{'summary': 'Experiment create error', 'description': '{0} request: create new record'.format(request.method)}, isError=True)
-                db.session.commit()
                 flash(str(e), 'danger')
 
 
@@ -595,77 +602,75 @@ def experimentCRUD():
                         originalRecord.project_id = f['project_id']
                         originalRecord.experimenter_id = f['experimenter_id']
                         originalRecord.witness_id = f['witness_id']
-                        db.session.add(originalRecord)
+                        originalRecord.save()
                         logActivity(Experiment, {'summary': '', 'description': '{0} request for ID {1}'.format(request.method, idValue)})
 
                         # Update Methodology
-                        originalMethodologyList = getMethodologyArray(idValue)
-                        originalMethodologyList = dict(map(lambda x: x.values(), originalMethodologyList))
-                        newMethodologyList = {}
+                        originalMethodologyList = Methodology.getByExperimentID(idValue)
+
+                        for item in originalMethodologyList:
+                            item.delete()
+                            logActivity(Methodology, {'summary': '',
+                                                      'description': '{0} request for ID {1} (Remove)'.format(
+                                                      request.method, item.id)})
                         for item in f.items():
                             key, value = item
                             if 'methodology' in key:
                                 key = key.split('_').pop()
-                                newMethodologyList.update({key:value})
-
-                        if len(newMethodologyList)>0:
-                            for item in newMethodologyList.items():
-                                key, value = item
-                                insertIntoTable('methodology', 'experiment_id, step, description', "'{0}','{1}','{2}'".format(idValue, key, value))
+                                newMethodology = Methodology()
+                                auxID = TableRef.getNextID(newMethodology.__tablename__)
+                                newMethodology.id = auxID
+                                newMethodology.step = key
+                                newMethodology.experiment_id = idValue
+                                newMethodology.description = value
+                                newMethodology.save()
                                 logActivity(Methodology, {'summary': '', 'description': '{0} request for ID {1} (Create)'.format(request.method, idValue)})
 
-                        if len(originalMethodologyList) > 0:
-                            for item in originalMethodologyList.items():
-                                key, value = item
-                                # originalRecord = Methodology.query.filter((Methodology.experiment_id == idValue) & (Methodology.id == key)).first()
-                                # originalRecord.active = 0
-                                # db.session.add(originalRecord)
-                                Methodology.query.filter((Methodology.experiment_id == idValue) & (Methodology.id == key)).delete()
-                                logActivity(Methodology, {'summary': '', 'description': '{0} request for ID {1} (Remove)'.format(request.method, key)})
 
                         # Update Equipment
-                        if 'originalEquipmentList' in f:
-                            originalEquipmentList = f['originalEquipmentList'].replace("\'",'"')
-                            originalEquipmentList = json.loads(originalEquipmentList)
-                            originalEquipmentList = set(map(lambda x: str(x['value']),originalEquipmentList))
-                        else:
-                            originalEquipmentList = None
-                        newEquipmentList = f['equipment']
-                        if len(newEquipmentList) > 0: newEquipmentList = set(newEquipmentList.split(','))
-                        addedEquipmentRecords = (newEquipmentList - originalEquipmentList) if originalEquipmentList is not None else newEquipmentList
-                        removedEquipmentRecords = originalEquipmentList - newEquipmentList if originalEquipmentList is not None else []
+                        originalEquipmentList = ExperimentEquipment.getByExperimentID(idValue)
 
-                        if len(addedEquipmentRecords) > 0:
-                            for item in addedEquipmentRecords:
-                                insertIntoTable('experiment_equipment', 'experiment_id, equipment_id', "'{0}','{1}'".format(idValue, item))
-                                logActivity('experiment_equipment', {'summary': '', 'description': '{0} request for Experiment iid {1} (Create)'.format(request.method, idValue)})
+                        for item in originalEquipmentList:
+                            item.delete()
+                            logActivity(Methodology, {'summary': '',
+                                                      'description': '{0} request for ID {1} (Remove)'.format(
+                                                      request.method, item.id)})
 
-                        if len(removedEquipmentRecords) > 0:
-                            for item in removedEquipmentRecords:
-                                db.session.execute('update experiment_equipment set active = 0 where experiment_id = {0} and equipment_id = {1}'.format(idValue,item))
-                                logActivity('experiment_equipment', {'summary': '', 'description': '{0} request for ID {1} (Remove)'.format(request.method, item)})
+                        if f['equipment'] is not None:
+                            equipmentList: list = f['equipment'].split(',')
+                            for item in equipmentList:
+                                if item != '':
+                                    newEquipment = ExperimentEquipment()
+                                    auxID = TableRef.getNextID(newEquipment.__tablename__)
+                                    newEquipment.id = auxID
+                                    newEquipment.equipment_id = item
+                                    newEquipment.experiment_id = idValue
+                                    newEquipment.save()
 
-                        # Save the images to the server and store the names in the DB
+                        #update images
+                        deletePreviousImages = False
+                        previousImages = ExperimentImage.getByExperimentID(idValue)
                         for item in experimentForm.photos.data:
                             filename = secure_filename(item.filename)
-                            originalExperimentImages = ExperimentImage.query.filter(ExperimentImage.experiment_id == idValue).all()
-
                             if filename != '':
+                                if not deletePreviousImages:
+                                    deletePreviousImages = True
                                 # Sets a unique name for the file and replaces the name in the form
                                 uniqueID = str(uuid.uuid4()) + "." + item.filename.rsplit('.', 1)[1].lower()
                                 item.filename = uniqueID
                                 # Saves the image in the server
-                                item.save(os.path.join(settings.UPLOAD_FOLDER, uniqueID))
-                                insertIntoTable('experiment_image', 'photo,experiment_id', "'{0}','{1}'".format(uniqueID, idValue))
-                                logActivity(ExperimentImage, {'summary': '', 'description': '{0} request for Experiment id {1} (Create)'.format(request.method, idValue)})
-
-                            if originalExperimentImages is not None:
-                                for item in originalExperimentImages:
-                                    item.active = 0
-                                    db.session.add(item)
-                                    logActivity(ExperimentImage, {'summary': '', 'description': '{0} request for ID {1} (Remove)'.format(request.method, item)})
-
-                        db.session.commit()
+                                item.save(os.path.join(
+                                    settings.UPLOAD_FOLDER, uniqueID
+                                ))
+                                newExperimentImage = ExperimentImage()
+                                auxID = TableRef.getNextID(newExperimentImage.__tablename__)
+                                newExperimentImage.id = auxID
+                                newExperimentImage.experiment_id = idValue
+                                newExperimentImage.photo = item.filename
+                                newExperimentImage.save()
+                        if deletePreviousImages:
+                            for item in previousImages:
+                                item.delete()
                         return redirect(url_for('admin.experimentCRUD', id=idValue, links=links))
 
                     else:
@@ -722,7 +727,6 @@ def experimentCRUD():
                 except Exception as e:
                     db.session.rollback()
                     logActivity(Methodology, {'summary': 'Experiment delete error', 'description': '{0} request for ID {1} (Remove)'.format(request.method, idValue)}, isError=True)
-                    db.session.commit()
                     flashErrors(str(e))
                     newForm = False
 
@@ -733,6 +737,29 @@ def experimentCRUD():
 @admin.route("table/<name>")
 @login_required
 def query_results(name):
+
+    def decryptTable(data):
+        decryptedData = []
+        for row in data:
+            auxList = {}
+            headers = row.keys()
+            values = list(row)
+            row = dict(zip(headers, values))
+            for key, value in row.items():
+                try:
+                    if value.isdigit():
+                        value = int(value)
+                    else:
+                        value = models.decryptData(value)
+                except:
+                    pass
+                finally:
+                    auxList[key] = value
+            if 'active' not in headers or ('active' in headers and auxList['active'] == '1'):
+                auxList['code'] = f'{auxList["prefix"]}{auxList["id"] + auxList["value"]}'
+                decryptedData.append(auxList)
+        return decryptedData
+
     try:
         objectSpecificConfig = viewConf[name.lower()]
         userClearance = getUserClearance()
@@ -740,6 +767,7 @@ def query_results(name):
             abort(404)
         view = getattr(models, objectSpecificConfig['viewName'])
         model = db.session.query(view).all()
+        model = decryptTable(model)
         modelSchema = getattr(schemas, objectSpecificConfig['schema'])
         modelSchema = modelSchema(many=True)
         items = modelSchema.dump(model)

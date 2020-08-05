@@ -20,10 +20,10 @@ class codeForm(ModelForm):
         exclude = ['available']
 
 
-# class branchForm(ModelForm):
-#     class Meta:
-#         model = Branch
-#         exclude = ['active']
+class branchForm(ModelForm):
+    class Meta:
+        model = Branch
+        exclude = ['active']
 
 
 class projectForm(ModelForm):
@@ -31,14 +31,14 @@ class projectForm(ModelForm):
         model = Project
         exclude = ['active', 'journals']
     person_id = QuerySelectField(
-        query_factory=lambda: Person.query.order_by(text("name asc")),
+        query_factory=lambda: Person.getByAll(),
         get_pk=lambda a: a.id,
         get_label=lambda a: "{0} {1}, {2}".format(a.firstSurname, a.secondSurname, a.name),
         allow_blank=False,
         label='User Name',
     )
     branch_id = QuerySelectField(
-        query_factory=lambda: Branch.query.order_by(text("name asc")),
+        query_factory=lambda: Branch.getByAll(),
         get_pk=lambda a: a.id,
         get_label=lambda a: a.name,
         allow_blank=False,
@@ -57,7 +57,7 @@ class consecutiveForm(ModelForm):
         label='Table Name',
     )
     type_id = QuerySelectField(
-        query_factory=lambda: Code.query.order_by(text("description asc")),
+        query_factory=lambda: Code.getByAll(),
         get_pk=lambda a: a.id,
         get_label=lambda a: a.description,
         allow_blank=False,
@@ -70,7 +70,7 @@ class jobForm(ModelForm):
         model = Job
         exclude = ['active']
     user_role_id = QuerySelectField(
-        query_factory=lambda: UserRole.query.filter_by(active=1).order_by(text("name asc")),
+        query_factory=lambda: UserRole.getByAll(),
         get_pk=lambda a: a.id,
         get_label=lambda a: a.name,
         allow_blank=False,
@@ -128,14 +128,14 @@ class experimentForm(ModelForm):
     photos = MultipleFileField('Experiment Photos')
     main_objective = TextAreaField(u'Main Objective', validators=[DataRequired(), Length(max=3000)])
     project_id = qs(
-        query_factory=lambda: Project.query.filter_by(active=1).order_by(text("name asc")),
+        query_factory=lambda: Project.getByAll(),
         get_pk=lambda a: a.id,
         get_label=lambda a: a.name,
         allow_blank=False,
         label='Project Name'
     )
     experimenter_id = QuerySelectField(
-        query_factory=lambda: Person.query.order_by(text("name asc")),
+        query_factory=lambda: Person.getByAll(),
         get_pk=lambda a: a.id,
         get_label=lambda a: "{0} {1}, {2}".format(a.firstSurname, a.secondSurname, a.name),
         allow_blank=False,
@@ -143,7 +143,7 @@ class experimentForm(ModelForm):
     )
 
     witness_id = QuerySelectField(
-        query_factory=lambda: Person.query.order_by(text("name asc")),
+        query_factory=lambda: Person.getByAll(),
         get_pk=lambda a: a.id,
         get_label=lambda a: "{0} {1}, {2}".format(a.firstSurname, a.secondSurname, a.name),
         allow_blank=False,

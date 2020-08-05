@@ -51,7 +51,24 @@ def test():
     # branchInfo = Branch.getByID(0)
     # print(branchInfo.name)
 
-    equipmentInfo = Degree.getByAll()
+    equipmentInfo = db.session.query(t_view_branch).all()
+    decryptedData = []
+    for row in equipmentInfo:
+        auxList = []
+        for cell in row:
+            auxValue = cell
+            try:
+                if cell.isdigit():
+                    auxValue = int(auxValue)
+                else:
+                    auxValue = models.decryptData(cell)
+            except:
+                pass
+            finally:
+                auxList.append(auxValue)
+        currentValue = auxList.pop(2)
+        auxList[1] = f'{auxList[1]}{auxList[0]+currentValue}'
+        decryptedData.append(tuple(auxList))
 
     return str("Hi")
 

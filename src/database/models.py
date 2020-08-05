@@ -23,7 +23,7 @@ def encryptData(unencryptedData):
     return encryptedData.decode("utf-8")
 
 
-def decryptData(encryptedData):
+def decryptData(encryptedData: object) -> object:
     key = settings.ENCRYPTION_KEY
     cipher_suite = Fernet(bytes(key.encode()))
     decryptedData = cipher_suite.decrypt(bytes(encryptedData.encode()))
@@ -47,6 +47,14 @@ class Branch(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        self.active = '0'
+        self.save()
+
+    def fkToDict(self):
+        helper = {}
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
@@ -63,6 +71,23 @@ class Branch(Model):
         data = list(filter(lambda x: x.active == '1', data))
         return data
 
+    @classmethod
+    def viewData(cls):
+        statement = text("""
+            SELECT
+                b.id,
+                c.prefix,
+                c.value,
+                b.name
+            FROM 
+                branch b
+                left join table_ref t on t.name = 'branch'
+                left join consecutive c on t.name = c.table_name_id
+        """)
+        data = db.session.execute(statement)
+        for row in data:
+            print(row)
+        return data
 
 class Code(Model):
     __tablename__ = 'code'
@@ -84,6 +109,14 @@ class Code(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def fkToDict(self):
+        helper = {}
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
@@ -97,7 +130,6 @@ class Code(Model):
         for item in data:
             item.description = decryptData(item.description)
             item.available = decryptData(item.available)
-        data = list(filter(lambda x: x.active == '1', data))
         return data
 
 
@@ -120,12 +152,20 @@ class Degree(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        self.active = '0'
+        self.save()
+
+    def fkToDict(self):
+        helper = {}
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
         data.name = decryptData(data.name)
         data.description = decryptData(data.description)
-        data.active = decryptData(data.active)
+        data.active = (True) if decryptData(data.active) == '1' else False
         return data
 
     @classmethod
@@ -167,6 +207,14 @@ class Equipment(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        self.active = '0'
+        self.save()
+
+    def fkToDict(self):
+        helper = {}
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
@@ -199,10 +247,6 @@ class TableRef(Model):
     isHidden = Column(Unicode(250), server_default=text("((0))"))
     available = Column(Unicode(250), server_default=text("((1))"))
 
-    def __repr__(self):
-        # easy to override, and it'll honor __repr__ in foreign relationships
-        return str([{"name":self.name}, {"description":self.description}])
-
     @classmethod
     def getNextID(cls, tableName):
         newID = db.session.query(cls).get(tableName)
@@ -223,9 +267,6 @@ class UserRole(Model):
     description = Column(Unicode(250), nullable=False, info={'label': 'User Role Description'})
     active = Column(Unicode(250), index=True, server_default=text("((1))"))
 
-    def __repr__(self):
-        return str([{'id':self.id},{'name':self.name}])
-
     def __init__(self):
         super().__init__()
         self.active = '1'
@@ -236,6 +277,14 @@ class UserRole(Model):
         self.active = encryptData(self.active)
         db.session.add(self)
         db.session.commit()
+
+    def delete(self):
+        self.active = '0'
+        self.save()
+
+    def fkToDict(self):
+        helper = {}
+        return helper
 
     @classmethod
     def getByID(cls, pk):
@@ -270,10 +319,20 @@ class Consecutive(Model):
 
     def save(self):
         self.description = encryptData(self.description)
-        self.value = encryptData(self.value)
+        self.value = self.value
         self.prefix = encryptData(self.prefix)
         db.session.add(self)
         db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def fkToDict(self):
+        helper = {}
+        helper.update({'table_name_id': self.table_name})
+        helper.update({'type_id': self.type})
+        return helper
 
     @classmethod
     def getByID(cls, pk):
@@ -281,6 +340,8 @@ class Consecutive(Model):
         data.description = decryptData(data.description)
         data.value = decryptData(data.value)
         data.prefix = decryptData(data.prefix)
+        data.table_name = TableRef.query.get(data.table_name_id)
+        data.type = Code.getByID(data.type_id)
         return data
 
     @classmethod
@@ -312,11 +373,21 @@ class Job(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        self.active = '0'
+        self.save()
+
+    def fkToDict(self):
+        helper = {}
+        helper.update({'user_role_id': self.user_role})
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
         data.name = decryptData(data.name)
         data.active = decryptData(data.active)
+        data.user_role = UserRole.getByID(data.user_role_id)
         return data
 
     @classmethod
@@ -404,17 +475,20 @@ class Person(UserMixin, Model):
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
-        data.nickname = decryptData(data.nickname)
-        data.isAdmin = decryptData(data.isAdmin)
-        data.name = decryptData(data.name)
-        data.firstSurname = decryptData(data.firstSurname)
-        data.secondSurname = decryptData(data.secondSurname)
-        data.phone = decryptData(data.phone)
-        data.signature = decryptData(data.signature)
-        data.photo = decryptData(data.photo)
-        data.active = decryptData(data.active)
-        data.degree = Degree.getByID(data.degree_id)
-        data.job = Job.getByID(data.job_id)
+        if data is not None:
+            data.nickname = decryptData(data.nickname)
+            data.isAdmin = decryptData(data.isAdmin)
+            data.name = decryptData(data.name)
+            data.firstSurname = decryptData(data.firstSurname)
+            data.secondSurname = decryptData(data.secondSurname)
+            data.phone = decryptData(data.phone)
+            data.signature = decryptData(data.signature) if data.signature is not None else None
+            data.photo = decryptData(data.photo) if data.photo is not None else None
+            data.active = decryptData(data.active)
+            data.degree = Degree.getByID(data.degree_id)
+            data.job = Job.getByID(data.job_id)
+        else:
+            return None
         return data if data.active == '1' else None
 
     @classmethod
@@ -428,8 +502,8 @@ class Person(UserMixin, Model):
             item.firstSurname = decryptData(item.firstSurname)
             item.secondSurname = decryptData(item.secondSurname)
             item.phone = decryptData(item.phone)
-            item.signature = decryptData(item.signature)
-            item.photo = decryptData(item.photo)
+            item.signature = decryptData(item.signature) if item.signature is not None else None
+            item.photo = decryptData(item.photo) if item.photo is not None else None
         data = list(filter(lambda x: x.active == '1', data))
         return data
 
@@ -457,11 +531,23 @@ class ActivityLog(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def fkToDict(self):
+        helper = {}
+        helper.update({'table_name_id': self.table_name})
+        helper.update({'person_id': self.person})
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
         data.date_time = decryptData(data.date_time)
         data.description = decryptData(data.description)
+        data.table_name = TableRef.query.get(data.table_name_id)
+        data.person = Person.getByID(data.person_id)
         return data
 
     @classmethod
@@ -495,12 +581,24 @@ class ErrorLog(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def fkToDict(self):
+        helper = {}
+        helper.update({'person_id': self.person})
+        helper.update({'table_name_id': self.table_name})
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
         data.date_time = decryptData(data.date_time)
         data.description = decryptData(data.description)
         data.summary = decryptData(data.summary)
+        data.person = Person.getByID(data.person_id)
+        data.table_name = TableRef.query.get(data.table_name_id)
         return data
 
     @classmethod
@@ -543,6 +641,16 @@ class Project(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        self.active = '0'
+        self.save()
+
+    def fkToDict(self):
+        helper = {}
+        helper.update({'person_id': self.person})
+        helper.update({'branch_id': self.branch})
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
@@ -550,6 +658,8 @@ class Project(Model):
         data.price = decryptData(data.price)
         data.active = decryptData(data.active)
         data.journals = decryptData(data.journals)
+        data.person = Person.getByID(data.person_id)
+        data.branch = Branch.getByID(data.branch_id)
         return data
 
     @classmethod
@@ -602,6 +712,17 @@ class Experiment(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        self.active = '0'
+        self.save()
+
+    def fkToDict(self):
+        helper = {}
+        helper.update({'project_id': self.project})
+        helper.update({'experimenter_id': self.experimenter})
+        helper.update({'witness_id': self.witness})
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
@@ -610,6 +731,9 @@ class Experiment(Model):
         data.description = decryptData(data.description)
         data.main_objective = decryptData(data.main_objective)
         data.active = decryptData(data.active)
+        data.project = Project.getByID(data.project_id)
+        data.experimenter = Person.getByID(data.experimenter_id)
+        data.witness = Person.getByID(data.witness_id)
         return data
 
     @classmethod
@@ -648,11 +772,21 @@ class ExperimentImage(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        self.active = '0'
+        self.save()
+
+    def fkToDict(self):
+        helper = {}
+        helper.update({'experiment_id': self.experiment})
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
         data.photo = decryptData(data.photo)
         data.active = decryptData(data.active)
+        data.experiment = Experiment.getByID(data.experiment_id)
         return data
 
     @classmethod
@@ -663,6 +797,12 @@ class ExperimentImage(Model):
             item.active = decryptData(item.active)
         data = list(filter(lambda x: x.active == '1', data))
         return data
+
+    @classmethod
+    def getByExperimentID(cls, pk):
+        data = ExperimentImage.getByAll()
+        results = list(filter(lambda x: x["experiment_id"] == pk, data))
+        return results
 
 
 class Methodology(Model):
@@ -690,12 +830,22 @@ class Methodology(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        self.active = '0'
+        self.save()
+
+    def fkToDict(self):
+        helper = {}
+        helper.update({'experiment_id': self.experiment})
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls).get(pk))
         data.step = decryptData(data.step)
         data.description = decryptData(data.description)
         data.active = decryptData(data.active)
+        data.experiment = Experiment.getByID(data.experiment_id)
         return data
 
     @classmethod
@@ -706,6 +856,12 @@ class Methodology(Model):
             item.description = decryptData(item.description)
             item.active = decryptData(item.active)
         data = list(filter(lambda x: x.active == '1', data))
+        return data
+
+    @classmethod
+    def getByExperimentID(cls, pk):
+        data = Methodology.getByAll()
+        data = list(filter(lambda x: x.experiment_id == int(pk), data))
         return data
 
 
@@ -731,6 +887,15 @@ class Objective(Model):
         self.active = encryptData(self.active)
         db.session.add(self)
         db.session.commit()
+
+    def delete(self):
+        self.active = '0'
+        self.save()
+
+    def fkToDict(self):
+        helper = {}
+        helper.update({'experiment_id': self.experiment})
+        return helper
 
     @classmethod
     def getByID(cls, pk):
@@ -766,6 +931,16 @@ class ExperimentEquipment(Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        self.active = '0'
+        self.save()
+
+    def fkToDict(self):
+        helper = {}
+        helper.update({'experiment_id': self.experiment})
+        helper.update({'equipment_id': self.equipment})
+        return helper
+
     @classmethod
     def getByID(cls, pk):
         data = copy.deepcopy(db.session.query(cls, Equipment).join(Equipment).filter(Equipment.id == pk).all())
@@ -774,10 +949,13 @@ class ExperimentEquipment(Model):
             helper = {}
             helper.update({"brand": decryptData(item.Equipment.brand)})
             helper.update({"name": decryptData(item.Equipment.name)})
+            helper.update({"serial": decryptData(item.Equipment.serial)})
             helper.update({"model": decryptData(item.Equipment.model)})
             helper.update({"active": decryptData(item.ExperimentEquipment.active)})
             helper.update({"experiment_id": item.ExperimentEquipment.experiment_id})
             helper.update({"equipment_id": item.ExperimentEquipment.equipment_id})
+            helper.update({"experiment": Experiment.getByID(item.ExperimentEquipment.experiment_id)})
+            helper.update({"equipment": Equipment.getByID(item.ExperimentEquipment.equipment_id)})
             results.append(helper)
         results = list(filter(lambda x: x["active"] == '1', results))
         return results
@@ -788,6 +966,7 @@ class ExperimentEquipment(Model):
         results = []
         for item in data:
             helper = {}
+            helper.update({"id": item.Equipment.id})
             helper.update({"brand": decryptData(item.Equipment.brand)})
             helper.update({"name": decryptData(item.Equipment.name)})
             helper.update({"model": decryptData(item.Equipment.model)})
@@ -798,6 +977,12 @@ class ExperimentEquipment(Model):
         results = list(filter(lambda x: x["active"] == '1', results))
         return results
 
+    @classmethod
+    def getByExperimentID(cls, pk):
+        data = ExperimentEquipment.getByAll()
+        results = list(filter(lambda x: x["experiment_id"] == int(pk), data))
+        return results
+
 # t_experiment_equipment = Table(
 #     'experiment_equipment', metadata,
 #     Column('experiment_id', ForeignKey('experiment.id'), nullable=False),
@@ -805,107 +990,117 @@ class ExperimentEquipment(Model):
 #     Column('active', Integer, index=True, server_default=text("((1))"))
 # )
 
-
 t_view_activity_log = Table(
     'view_activity_log', metadata,
     Column('id', Integer, nullable=False),
-    Column('code', Unicode(250), nullable=False),
+    Column('prefix', Unicode(250), nullable=False),
+    Column('value', Unicode(250), nullable=False),
     Column('table_name', Unicode(250)),
     Column('person', Unicode(250)),
     Column('date_time', DateTime),
-    Column('description', Unicode(250), nullable=False)
+    Column('description', Unicode(250), nullable=False),
+    Column('active', Unicode(250), nullable=False)
 )
 
 
 t_view_branch = Table(
     'view_branch', metadata,
     Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
-    Column('name', Unicode(250), nullable=False)
+    Column('prefix', Unicode(250), nullable=False),
+    Column('value', Unicode(250), nullable=False),
+    Column('name', Unicode(250), nullable=False),
+    Column('active', Unicode(250), nullable=False)
 )
 
 
 t_view_degree = Table(
     'view_degree', metadata,
     Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
+    Column('prefix', Unicode(250), nullable=False),
+    Column('value', Unicode(250), nullable=False),
     Column('name', Unicode(250), nullable=False),
-    Column('description', Unicode(250), nullable=False)
+    Column('description', Unicode(250), nullable=False),
+    Column('active', Unicode(250), nullable=False)
 )
 
 
 t_view_error_log = Table(
     'view_error_log', metadata,
     Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
+    Column('prefix', Unicode(250), nullable=False),
+    Column('value', Unicode(250), nullable=False),
     Column('person', Unicode(250)),
     Column('date_time', DateTime),
     Column('table_name', Unicode(250)),
     Column('description', Unicode(200), nullable=False),
-    Column('summary', Unicode(2000), nullable=False)
+    Column('summary', Unicode(2000), nullable=False),
+    Column('active', Unicode(250), nullable=False)
 )
 
 
 t_view_experiment = Table(
     'view_experiment', metadata,
     Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
+    Column('prefix', Unicode(250), nullable=False),
+    Column('value', Unicode(250), nullable=False),
     Column('name', Unicode(250), nullable=False),
-    Column('date', Date),
+    Column('date', Unicode(250)),
     Column('description', Unicode(2000), nullable=False),
     Column('main_objective', Unicode(3000), nullable=False),
     Column('project', Unicode(250)),
-    Column('experimenter', Unicode(153), nullable=False),
-    Column('withness', Unicode(153), nullable=False),
-    Column('equipment', Unicode(4000)),
-    Column('methodology', Unicode(4000)),
-    Column('objective', Unicode(4000))
+    Column('active', Unicode(250), nullable=False)
 )
 
 
 t_view_job = Table(
     'view_job', metadata,
     Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
+    Column('prefix', Unicode(250), nullable=False),
+    Column('value', Unicode(250), nullable=False),
     Column('name', Unicode(250), nullable=False),
-    Column('role', Unicode(250))
+    Column('role', Unicode(250)),
+    Column('active', Unicode(250), nullable=False)
 )
 
 
 t_view_person = Table(
     'view_person', metadata,
     Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
+    Column('prefix', Unicode(250), nullable=False),
+    Column('value', Unicode(250), nullable=False),
     Column('nickname', Unicode(250), nullable=False),
     Column('name', Unicode(250), nullable=False),
     Column('firstSurname', Unicode(250), nullable=False),
     Column('secod_surname', Unicode(250), nullable=False),
-    Column('phone', Integer, nullable=False),
-    Column('signature', LargeBinary),
-    Column('photo', LargeBinary),
+    Column('phone', Unicode(250), nullable=False),
+    Column('signature', Unicode(250)),
+    Column('photo', Unicode(250)),
     Column('degree', Unicode(250)),
-    Column('job', Unicode(250))
+    Column('job', Unicode(250)),
+    Column('active', Unicode(250), nullable=False)
 )
 
 
 t_view_project = Table(
     'view_project', metadata,
     Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
+    Column('prefix', Unicode(250), nullable=False),
+    Column('value', Unicode(250), nullable=False),
     Column('name', Unicode(250), nullable=False),
-    Column('price', Float(53)),
-    Column('journals', Integer),
-    Column('person', Unicode(153), nullable=False),
-    Column('branch', Unicode(250))
+    Column('price', Unicode(250)),
+    Column('branch', Unicode(250)),
+    Column('active', Unicode(250), nullable=False)
 )
 
 
 t_view_user_role = Table(
     'view_user_role', metadata,
     Column('id', Integer, nullable=False),
-    Column('code', Unicode(62), nullable=False),
+    Column('prefix', Unicode(250), nullable=False),
+    Column('value', Unicode(250), nullable=False),
     Column('name', Unicode(250), nullable=False),
-    Column('description', Unicode(100), nullable=False)
+    Column('description', Unicode(100), nullable=False),
+    Column('active', Unicode(250), nullable=False)
 )
 
 t_view_code = Table(

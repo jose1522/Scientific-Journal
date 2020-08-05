@@ -324,90 +324,107 @@ GO
 GO
 CREATE VIEW view_job(
     id,
-    code,
+    prefix,
+    value,
     name,
-    role
+    role,
+    active
 ) AS 
 SELECT
     j.id,
-    concat(coalesce(c.prefix, ''),j.id + COALESCE(c.value,0)),
+    c.prefix,
+    c.value,
     j.name,
-    u.name
+    u.name,
+    j.active
 FROM 
     job j
     left join user_role u on j.user_role_id = u.id
     left join table_ref t on t.name = 'job'
     left join consecutive c on t.name = c.table_name_id
-WHERE 
-    j.active = 1
+-- WHERE 
+--     j.active = 1
 GO
 
 -- Branch View --
 GO
 CREATE VIEW view_branch(
     id,
-    code,
-    name
+    prefix,
+    value,
+    name,
+    active
 ) AS 
 SELECT
     b.id,
-    concat(coalesce(c.prefix, ''),b.id + COALESCE(c.value,0)),
-    b.name
+    c.prefix,
+    c.value,
+    b.name,
+    b.active
 FROM 
     branch b
     left join table_ref t on t.name = 'branch'
     left join consecutive c on t.name = c.table_name_id
-WHERE 
-    b.active = 1
+-- WHERE 
+--     b.active = 1
 GO
 
 -- User Role View --
 GO
 CREATE VIEW view_user_role(
     id,
-    code,
+    prefix,
+    value,
     name,
-    description
+    description,
+    active
 ) AS 
 SELECT
     u.id,
-    concat(coalesce(c.prefix, ''),u.id + COALESCE(c.value,0)),
+    c.prefix,
+    c.value,
     u.name,
-    u.description
+    u.description,
+    u.active
 FROM 
     user_role u
     left join table_ref t on t.name = 'user_role'
     left join consecutive c on t.name = c.table_name_id
-WHERE 
-    u.active = 1
+-- WHERE 
+--     u.active = 1
 GO
 
 -- Degree View --
 GO
 CREATE VIEW view_degree(
     id,
-    code,
+    prefix,
+    value,
     name,
-    description
+    description,
+    active
 ) AS 
 SELECT
     d.id,
-    concat(coalesce(c.prefix, ''),d.id + COALESCE(c.value,0)),
+    c.prefix,
+    c.value,
     d.name,
-    d.description
+    d.description,
+    d.active
 FROM 
     degree d
     left join table_ref t on t.name = 'degree'
     left join consecutive c on t.name = c.table_name_id
-WHERE 
-    d.active = 1
+-- WHERE 
+--     d.active = 1
 GO
 
 -- Error Log View --
 GO
 CREATE VIEW view_error_log(
     id,
-    code,
+    prefix,
+    value,
     person,
     date_time,
     table_name,
@@ -416,7 +433,8 @@ CREATE VIEW view_error_log(
 ) AS 
 SELECT
     e.id,
-    concat(coalesce(c.prefix, ''),e.id + COALESCE(c.value,0)),
+    c.prefix,
+    c.value,
     p.nickname,
     e.date_time,
     t.name,
@@ -433,7 +451,8 @@ GO
 GO
 CREATE VIEW view_activity_log(
     id,
-    code,
+    prefix,
+    value,
     table_name,
     person,
     date_time,
@@ -441,7 +460,8 @@ CREATE VIEW view_activity_log(
 ) AS 
 SELECT
     a.id,
-    concat(coalesce(c.prefix, ''),a.id + COALESCE(c.value,0)),
+    c.prefix,
+    c.value,
     t.name,
     p.nickname,
     a.date_time,
@@ -457,31 +477,25 @@ GO
 GO
 CREATE VIEW view_experiment(
     id,
-    code,
+    prefix,
+    value,
     name,
     date,
     description,
     main_objective,
     project,
-    experimenter,
-    withness,
-    equipment,
-    methodology,
-    objective
+    active
 ) AS 
 SELECT
     e.id,
-    concat(coalesce(c.prefix, ''), e.id + COALESCE(c.value,0)),
+    c.prefix,
+    c.value,
     e.name,
     e.date,
     e.description,
     e.main_objective,
     pr.name,
-    CONCAT(p.secondSurname,' ',p.firstSurname,', ',p.name),
-    CONCAT(w.secondSurname,' ',w.firstSurname,', ',w.name),
-    STRING_AGG(CONCAT('name: ', eq.name,'; model: ', eq.model,', serial:',eq.serial),' \n '),
-    STRING_AGG(CONCAT('step: ',m.step,' description: ', m.description), ' \n '),
-    STRING_AGG(o.description, ' \n ')
+    e.active
 FROM 
     experiment e
     left join person p on e.experimenter_id = p.id
@@ -493,47 +507,47 @@ FROM
     left join equipment eq on eq.id = eq1.equipment_id and eq.active = 1
     left join methodology m on e.id = m.experiment_id and m.active = 1
     left join objective o on o.experiment_id = e.id and o.active = 1
-WHERE
-    e.active = 1
+-- WHERE
+--     e.active = 1
 GROUP BY
     e.id,
-    concat(coalesce(c.prefix, ''), e.id + COALESCE(c.value,0)),
+    c.prefix,
+    c.value,
     e.name,
     e.date,
     e.description,
     e.main_objective,
     pr.name,
-    CONCAT(w.secondSurname,' ',w.firstSurname,', ',w.name),
-    CONCAT(p.secondSurname,' ',p.firstSurname,', ',p.name)
+    e.active
 GO
 
 -- Project View --
 GO
 CREATE VIEW view_project(
     id,
-    code,
+    prefix,
+    value,
     name,
     price,
-    journals,
-    person,
-    branch
+    branch,
+    active
 ) AS 
 SELECT
     pr.id,
-    concat(coalesce(c.prefix, ''),pr.id + COALESCE(c.value,0)),
+    c.prefix,
+    c.value,
     pr.name,
     pr.price,
-    pr.journals,
-    CONCAT(p.secondSurname,' ',p.firstSurname,', ',p.name),
-    b.name
+    b.name,
+    pr.active
 FROM 
     project pr
     left join person p on pr.person_id = p.id
     left join table_ref t on t.name = 'project'
     left join consecutive c on t.name = c.table_name_id
     left join branch b on b.id = pr.branch_id
-WHERE
-    pr.active = 1
+-- WHERE
+--     pr.active = 1
 GO
 
 -- -- Customer Order View --
@@ -560,7 +574,8 @@ GO
 GO
 CREATE VIEW view_person(
     id,
-    code,
+    prefix,
+    value,
     nickname,
     name,
     firstSurname,
@@ -569,11 +584,13 @@ CREATE VIEW view_person(
     signature,
     photo,
     degree,
-    job
+    job,
+    active
 ) AS 
 SELECT
     p.id,
-    concat(coalesce(c.prefix, ''),p.id + COALESCE(c.value,0)),
+    c.prefix,
+    c.value,
     p.nickname,
     p.name,
     p.firstSurname,
@@ -582,32 +599,33 @@ SELECT
     p.signature,
     p.photo,
     d.name,
-    j.name
+    j.name,
+    p.active
 FROM 
     person p
     left join degree d on d.id = p.degree_id
     left join job j on j.id = p.job_id
     left join table_ref t on t.name = 'person'
     left join consecutive c on t.name = c.table_name_id
-WHERE
-    p.active = 1
+-- WHERE
+--     p.active = 1
 GO
 
 -- Consecutive View --
 GO
 CREATE VIEW view_consecutive(
     id,
-    type,
-    description,
+    prefix,
     value,
-    prefix
+    type,
+    description
 ) AS 
 SELECT
     c.id,
-    c2.description,
-    c.description,
+    c.prefix,
     c.value,
-    c.prefix
+    c2.description,
+    c.description
 FROM 
     consecutive c
     left join code c2 on c.type_id = c2.id
