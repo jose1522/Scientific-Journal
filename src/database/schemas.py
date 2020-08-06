@@ -19,6 +19,42 @@ from marshmallow import fields, Schema
 #     secondSurname = ma.auto_field(data_key='Second Surname')
 #     job = fields.Pluck("self","name",data_key='Job Title')
 
+class DegreeSchema(Schema):
+    class Meta:
+        ordered = True
+
+    link = ma.Hyperlinks(ma.URLFor("admin.formCRUD", id="<id>", name="degree"))
+    code = fields.Str(data_key='Code')
+    name = fields.Str(data_key='Name')
+    description = fields.Str(data_key='Description')
+
+
+class DegreeSchemaFull(Schema):
+    class Meta:
+        ordered = True
+
+    name = fields.Str(data_key='Name')
+    description = fields.Str(data_key='Description')
+
+
+class MethodologySchemaFull(Schema):
+    class Meta:
+        ordered = True
+
+    step = fields.Str(data_key='Step')
+    description = fields.Str(data_key='Description')
+    experiment_id = fields.Str(data_key='Experiment')
+
+
+class EquipmentSchemaFull(Schema):
+    class Meta:
+        ordered = True
+
+    name = fields.Str(data_key='Name')
+    brand = fields.Str(data_key='Brand')
+    model = fields.Str(data_key='Model')
+    serial = fields.Str(data_key='Serial')
+
 
 class JobSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
@@ -28,6 +64,12 @@ class JobSchema(ma.SQLAlchemyAutoSchema):
     code = fields.Str(data_key='Code')
     name = fields.Str(data_key='First Name')
 
+
+class JobSchemaFull(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        ordered = True
+
+    name = fields.Str(data_key='First Name')
 
 class PersonSchema(Schema):
     class Meta:
@@ -41,6 +83,17 @@ class PersonSchema(Schema):
     job = fields.Str(data_key='Job Title')
 
 
+class PersonSchemaFull(Schema):
+    class Meta:
+        ordered = True
+
+    name = fields.Str(data_key='First Name')
+    firstSurname = fields.Str(data_key='First Surname')
+    secondSurname = fields.Str(data_key='Second Surname')
+    job = fields.Nested(JobSchemaFull)
+    degree = fields.Nested(DegreeSchemaFull)
+
+
 class ProjectSchema(Schema):
     class Meta:
         ordered = True
@@ -52,6 +105,17 @@ class ProjectSchema(Schema):
     branch = fields.Str(data_key='Branch')
 
 
+class ProjectSchemaFull(Schema):
+    class Meta:
+        ordered = True
+
+    id = fields.Str(data_key='ID')
+    name = fields.Str(data_key='Name')
+    price = fields.Str(data_key='Price')
+    person = fields.Str(data_key='Person')
+    branch = fields.Str(data_key='Branch')
+
+
 class BranchSchema(Schema):
     class Meta:
         ordered = True
@@ -60,6 +124,12 @@ class BranchSchema(Schema):
     code = fields.Str(data_key='Code')
     name = fields.Str(data_key='Name')
 
+class BranchSchemaFull(Schema):
+    class Meta:
+        ordered = True
+
+    id = fields.Str(data_key='id')
+    name = fields.Str(data_key='Name')
 
 class CodeSchema(Schema):
     class Meta:
@@ -85,16 +155,6 @@ class RoleSchema(Schema):
         ordered = True
 
     link = ma.Hyperlinks(ma.URLFor("admin.formCRUD", id="<id>", name="user-role"))
-    code = fields.Str(data_key='Code')
-    name = fields.Str(data_key='Name')
-    description = fields.Str(data_key='Description')
-
-
-class DegreeSchema(Schema):
-    class Meta:
-        ordered = True
-
-    link = ma.Hyperlinks(ma.URLFor("admin.formCRUD", id="<id>", name="degree"))
     code = fields.Str(data_key='Code')
     name = fields.Str(data_key='Name')
     description = fields.Str(data_key='Description')
@@ -132,3 +192,16 @@ class ExperimentSchema(Schema):
     name = fields.Str(data_key='Name')
     project = fields.Str(data_key='Project')
     experimenter = fields.Str(data_key='Owner')
+
+
+class ExperimentSchemaFull(Schema):
+    class Meta:
+        ordered = True
+
+    id = fields.Str(data_key='ID')
+    name = fields.Str(data_key='Name')
+    date = fields.Str(data_key='Date')
+    description = fields.Str(data_key='Description')
+    main_objective = fields.Str(data_key='Objective')
+    experimenter = fields.Nested(PersonSchemaFull)
+    witness = fields.Nested(PersonSchemaFull)

@@ -18,6 +18,5 @@ flask_bootstrap
 redis
 pyyaml
 pyodbc
-Flask-RESTPlus
 cryptography
 googletrans

@@ -1,8 +1,9 @@
 # coding: utf-8
 from datetime import datetime
 
-from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Index, Integer, LargeBinary, Table, Unicode, text
+from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Index, Integer, LargeBinary, Table, Unicode, text, func
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy_utils import aggregated
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -10,6 +11,7 @@ from . import db
 from core import settings
 from cryptography.fernet import Fernet
 import copy
+
 
 Base = db
 Model = Base.Model
@@ -71,23 +73,6 @@ class Branch(Model):
         data = list(filter(lambda x: x.active == '1', data))
         return data
 
-    @classmethod
-    def viewData(cls):
-        statement = text("""
-            SELECT
-                b.id,
-                c.prefix,
-                c.value,
-                b.name
-            FROM 
-                branch b
-                left join table_ref t on t.name = 'branch'
-                left join consecutive c on t.name = c.table_name_id
-        """)
-        data = db.session.execute(statement)
-        for row in data:
-            print(row)
-        return data
 
 class Code(Model):
     __tablename__ = 'code'
@@ -502,6 +487,8 @@ class Person(UserMixin, Model):
             item.firstSurname = decryptData(item.firstSurname)
             item.secondSurname = decryptData(item.secondSurname)
             item.phone = decryptData(item.phone)
+            item.degree = Degree.getByID(item.degree_id)
+            item.job = Job.getByID(item.job_id)
             item.signature = decryptData(item.signature) if item.signature is not None else None
             item.photo = decryptData(item.photo) if item.photo is not None else None
         data = list(filter(lambda x: x.active == '1', data))
@@ -670,7 +657,43 @@ class Project(Model):
             item.price = decryptData(item.price)
             item.active = decryptData(item.active)
             item.journals = decryptData(item.journals)
+            item.person = Person.getByID(item.person_id)
+            item.branch = Branch.getByID(item.branch_id)
         data = list(filter(lambda x: x.active == '1', data))
+        return data
+
+    @classmethod
+    def getAllFull(cls, args):
+        data = db.session.query(Project, func.count(Experiment.id).label('experiments'), Branch.name).select_from(Project).join(Experiment, Branch).group_by(Project, Branch.name)
+        if 'branch' in args:
+            data = data.filter(Branch.id == args.get('branch'))
+        if 'owner' in args:
+            data = data.filter(Project.person_id == args.get('owner'))
+        if 'id' in args:
+            data = data.filter(Project.id == args.get('id'))
+        data = data.all()
+        data = copy.deepcopy(data)
+        auxArray = []
+        for row in data:
+            headers = row.keys()
+            values = list(row)
+            auxDict = dict(zip(headers, values))
+            row = auxDict.get('Project')
+            row.name = decryptData(row.name)
+            row.price = int(decryptData(row.price))
+            row.active = decryptData(row.active)
+            row.branch = decryptData(auxDict.get('name'))
+            row.journals = auxDict.get('experiments')
+            row.person = Person.getByID(row.person_id)
+            row.person = f'{row.person.firstSurname} {row.person.secondSurname}, {row.person.name}'
+            auxArray.append(row)
+
+        data = list(filter(lambda x: x.active == '1', auxArray))
+        if len(data) > 0:
+            if 'gt' in args:
+                data = list(filter(lambda x: x.price >= int(args.get('gt')), auxArray))
+            elif 'lt' in args:
+                data = list(filter(lambda x: x.price <= int(args.get('lt')), auxArray))
         return data
 
 
@@ -696,7 +719,6 @@ class Experiment(Model):
 
     # Adding methodology relationship
     methodology = relationship('Methodology',  back_populates="experiment")
-
     equipments = relationship(Equipment, secondary='experiment_equipment')
 
     def __init__(self):
@@ -737,16 +759,40 @@ class Experiment(Model):
         return data
 
     @classmethod
-    def getByAll(cls):
-        data = copy.deepcopy(db.session.query(cls).all())
+    def getByAll(cls, pk=None):
+        data = cls.query
+        if pk is not None:
+            data = data.filter(cls.project_id == pk)
+        data = data.all()
+        methodology = {}
+        equipment = {}
+        for item in data:
+            methodologyParents = []
+            equipmentParents = []
+            for parent in item.methodology:
+                child = Methodology.getByID(parent.id)
+                if child.active == '1':
+                    methodologyParents.append(child)
+
+            for parent in item.equipments:
+                child = Equipment.getByID(parent.id)
+                if child.active == '1':
+                    equipmentParents.append(child)
+
+            methodology.update({item.id:methodologyParents})
+            equipment.update({item.id: equipmentParents})
+
+        data = copy.deepcopy(data)
         for item in data:
             item.name = decryptData(item.name)
             item.date = decryptData(item.date)
             item.description = decryptData(item.description)
             item.main_objective = decryptData(item.main_objective)
             item.active = decryptData(item.active)
+            item.experimenter = Person.getByID(item.experimenter_id)
+            item.witness = Person.getByID(item.experimenter_id)
         data = list(filter(lambda x: x.active == '1', data))
-        return data
+        return data, methodology, equipment
 
 
 class ExperimentImage(Model):
