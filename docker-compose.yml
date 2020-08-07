@@ -43,3 +43,13 @@ services:
     container_name: aspnetsamples
     expose:
       - 80
+
+  payment:
+    build:
+      context: https://github.com/jose1522/payment-gateway-api.git
+      dockerfile: Dockerfile
+    container_name: payment-gateway
+    expose:
+      - 80
+    ports:
+    - "8081:80"
